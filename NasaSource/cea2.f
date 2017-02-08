@@ -112,25 +112,25 @@ C LOCAL VARIABLES
       INTEGER INDEX
       REAL*8 xi,xln
       REAL*8 DLOG
-      SAVE caseok,ensert,ex,i,inc,infile,iof,j,ln,n,ofile,prefix,readok,
+      SAVE caseok,ensert,ex,i,inc,infile,iof,j,ln,n,ofile,prefix,readok, !saves variables, but where?
      &  xi,xln
 C
-      WRITE (*,99001)
-      READ (*,99002) prefix
-      ln = INDEX(prefix,' ') - 1
-      infile = prefix(1:ln)//'.inp'
-      ofile = prefix(1:ln)//'.out'
-      Pfile = prefix(1:ln)//'.plt'
-      INQUIRE (FILE=infile,EXIST=ex)
-      IF ( .NOT.ex ) THEN
-        PRINT *,infile,' DOES NOT EXIST'
-        GOTO 400
+      WRITE (*,99001) ! Ask for input file name
+      READ (*,99002) prefix ! Get input file name from user
+      ln = INDEX(prefix,' ') - 1 
+      infile = prefix(1:ln)//'.inp' !add file suffix for input file
+      ofile = prefix(1:ln)//'.out'  !add file suffix for output file
+      Pfile = prefix(1:ln)//'.plt'  !add file suffix for... i dont know
+      INQUIRE (FILE=infile,EXIST=ex)! Get information on opened files
+      IF ( .NOT.ex ) THEN !if file does not exist then
+        PRINT *,infile,' DOES NOT EXIST' !tell user the file doesnt exist
+        GOTO 400  !stop the program
       ENDIF
-      OPEN (IOINP,FILE=infile,STATUS='old',FORM='formatted')
-      OPEN (IOOUT,FILE=ofile,STATUS='unknown',FORM='formatted')
-      OPEN (IOSCH,STATUS='scratch',FORM='unformatted')
-      OPEN (IOTHM,FILE='thermo.lib',FORM='unformatted')
-      OPEN (IOTRN,FILE='trans.lib',FORM='unformatted')
+      OPEN (IOINP,FILE=infile,STATUS='old',FORM='formatted')! open input file given by user
+      OPEN (IOOUT,FILE=ofile,STATUS='unknown',FORM='formatted') !create and open output file
+      OPEN (IOSCH,STATUS='scratch',FORM='unformatted')! FIND OUT
+      OPEN (IOTHM,FILE='thermo.lib',FORM='unformatted')!open termodynamics library 
+      OPEN (IOTRN,FILE='trans.lib',FORM='unformatted')!Open trans library (WHAT IS TRANS LIBRARY?)
       WRITE (IOOUT,99006)
       WRITE (IOOUT,99007)
       WRITE (IOOUT,99006)
