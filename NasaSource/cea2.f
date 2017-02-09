@@ -131,14 +131,14 @@ C
       OPEN (IOSCH,STATUS='scratch',FORM='unformatted')! FIND OUT
       OPEN (IOTHM,FILE='thermo.lib',FORM='unformatted')!open termodynamics library 
       OPEN (IOTRN,FILE='trans.lib',FORM='unformatted')!Open trans library (WHAT IS TRANS LIBRARY?)
-      WRITE (IOOUT,99006)
-      WRITE (IOOUT,99007)
-      WRITE (IOOUT,99006)
-      readok = .TRUE.
-      Newr = .FALSE.
+      WRITE (IOOUT,99006) !make a seperation line in output
+      WRITE (IOOUT,99007) !write authors and name of application in output
+      WRITE (IOOUT,99006) !make another seperation line in output
+      readok = .TRUE.   ! Was able to read input file
+      Newr = .FALSE.  
  100  Iplt = 0
       Nplt = 0
-      CALL INPUT(readok,caseok,ensert)
+      CALL INPUT(readok,caseok,ensert) !Subroutine defined at line 2118
       IF ( caseok.AND.readok ) THEN
         DO iof = 1,Nof
           IF ( Oxf(iof).EQ.0..AND.B0p(1,1).NE.0. ) THEN
@@ -2136,13 +2136,14 @@ C LOCAL VARIABLES
       INTEGER INDEX
       REAL*8 denmtr,dpin(MAXNGC),eratio,hr,mix(MAXNGC),ur,xyz
       REAL*8 DABS,DMIN1,DSQRT
+C     gives the save atribute to the variables, so you can access them outsite this subroutine.
       SAVE cin,code,cx1,cx15,cx2,cx3,cx4,denmtr,dpin,eqrats,eratio,hr,i,
      &  ifrmla,ii,in,incd,iv,ix,j,jj,k,lcin,mix,ncin,nmix,phi,pltdat,
      &  reacts,refl,ur,xyz
 C
-      DATA uc/'ABCDEFGHIJKLMNOPQRSTUVWXYZ'/
-      DATA lc/'abcdefghijklmnopqrstuvwxyz'/
-      WRITE (IOOUT,99001)
+      DATA uc/'ABCDEFGHIJKLMNOPQRSTUVWXYZ'/ !initialize uppercase
+      DATA lc/'abcdefghijklmnopqrstuvwxyz'/ !initialize lowercase
+      WRITE (IOOUT,99001) 
       Caseok = .TRUE.
       Nonly = 0
       Nomit = 0
