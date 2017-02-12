@@ -30,16 +30,47 @@
     % ID OS and run CEA acordingly
     if ismac
         currentpath = pwd;
-        dos(strcat(currentpath,'/PCEA2.out'))
+        [status,cmdout] = dos(strcat(currentpath,'/PCEA2.out'));
+        disp(status)
+        disp(cmdout)
     elseif isunix
-        dos('PCEA2.out')
+        currentpath = pwd;
+        [status,cmdout] = dos(strcat(currentpath,'/PCEA2.out'));
+        disp(status)
+        disp(cmdout)
     elseif ispc
-        dos('PCEA2.exe')
+        [status,cmdout] = dos('PCEA2.exe');
+        disp(status)
+        disp(cmdout)
     else
         disp('Platform not supported')
     end  
 
+    IOout = fopen('wrapper.dat','r');
+    tline = fgets(IOout) ;
+    
+    while ischar(tline)
+            
+        %Finds the line containing the number of the harmonic
+        if any(strfind(tline,'NOHARM(I)'),1)
+            disp(tline)
+            found = tline ;
+            ii = 0 ;
+            % Separates the line in strings
+            tempcell = strread(found, '%s', 'delimiter','=') ;
+            out.noharm = tempcell{end}(1) ;
+        end
 
+%         if any(strfind(tline,'NO.          OMEGA          RAD./SEC.      HERTZ'),1)
+%             tline = fgets(fid);
+%             tline = fgets(fid);
+%             C_data = textscan(fileID,,'%d %f %f %f');
+%             C_data(1);
+%         end
 
+        tline = fgets(IOout);
+    end
+    
+    fclose(IOout);
 % end
 

@@ -120,7 +120,7 @@ C     READ (*,99002) prefix ! Get input file name from user
       prefix = 'wrapper'
       ln = INDEX(prefix,' ') - 1 
       infile = prefix(1:ln)//'.inp' !add file suffix for input file
-      ofile = prefix(1:ln)//'.out'  !add file suffix for output file
+      ofile = prefix(1:ln)//'.dat'  !add file suffix for output file
       Pfile = prefix(1:ln)//'.plt'  !add file suffix for... i dont know
       INQUIRE (FILE=infile,EXIST=ex)! Get information on opened files
       IF ( .NOT.ex ) THEN !if file does not exist then
