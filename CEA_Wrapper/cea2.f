@@ -115,8 +115,9 @@ C LOCAL VARIABLES
       SAVE caseok,ensert,ex,i,inc,infile,iof,j,ln,n,ofile,prefix,readok, !saves variables, but where?
      &  xi,xln
 C
-      WRITE (*,99001) ! Ask for input file name
-      READ (*,99002) prefix ! Get input file name from user
+C     WRITE (*,99001) ! Ask for input file name
+C     READ (*,99002) prefix ! Get input file name from user
+      prefix = 'wrapper'
       ln = INDEX(prefix,' ') - 1 
       infile = prefix(1:ln)//'.inp' !add file suffix for input file
       ofile = prefix(1:ln)//'.out'  !add file suffix for output file
