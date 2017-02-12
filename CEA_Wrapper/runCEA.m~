@@ -1,0 +1,14 @@
+% function [ output_args ] = runCEA( input_args )
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Takes in as input information to write in wrapper.inp file
+    % write wrapper.inp file
+    % identify operating system
+    % run PCEA2.out or PCEA2.exe depending on OS
+    % open wrapper.out file created by CEA
+    % read data in wrapper.out
+    % close wrapper.out
+    % return data in a table or struct 
+
+
+% end
+

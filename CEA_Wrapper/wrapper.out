@@ -9,7 +9,7 @@
 
 
 
- prob case=test5853 ro equilibrium
+ prob case=wrapper ro equilibrium
   
   ! iac problem
  p,bar  7000
@@ -29,7 +29,7 @@
            COMPOSITION DURING EXPANSION FROM INFINITE AREA COMBUSTOR
 
  Pin =101526.8 PSIA
- CASE = test5853       
+ CASE = wrapper        
 
              REACTANT                    WT FRACTION      ENERGY      TEMP
                                           (SEE NOTE)     KJ/KG-MOL      K  
