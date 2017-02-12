@@ -1,0 +1,67 @@
+***                           DATA - FLOW80                                ***
+*** NE PAS DETRUIRE LES LIGNE DE CE FICHIER DEBUTANT AVEC DE '*'           ***
+*** LORSQUE IBC =0, LES DEUX LIGNES /NODRES/ ET NP&NDIRECT/ _DOIVENT_      ***
+*** APPARAITRE MEME SI ELLES NE SONT PAS CONSIDEREES LORS DE L EXECUTION   ***
+*** FORMATS UTILISES: f1 = I2,1X , f2 = E12.6,1X                           ***
+******************************************************************************
+ITITRE - 100A1              = PROJET3_VITESSE_INTERNE_N2
+NSET,IFREQ - 2f1            = 1  1
+IPRINT,IFLUID,NSPEED - 3f1  = 0  0  1
+RHOL,RHOR,NHA - 2f2,I2      =0.100000E+04 0.000000E+00 1
+NOHARM(I),I=1,NHA - 10f1    =2
+NELEMS,NFREQ,IBC,N2 - 4f1   =24  2  1  1
+NSE(I),I=1,N2 - 25f1        =1
+NODRES - I2                 =4
+NP&NDIRCT,I=1,NODRES - 16f1 =1  1  1  2  1  3  1  4
+NGROUP - I2                 =1
+N1 - I2                     =1
+E(I),I=1,N1 - 25f2          =6.900000E+10
+NU(I),I=1,N1 - 25f2         =0.300000E+00
+RA(I),I=1,N1 - 25f2         =0.304800E+00
+TH(I),I=1,N1 - 25f2         =0.750000E-03
+RHO(I),I=1,N1 - 25f2        =0.270000E+04
+LE(I),I=1,N1 - 25f2         =0.833333E-01
+ICOUCH - I2                 = 0
+*** SI ICOUCH .NE. 0 ENTRER LES N1 MATRICES D'ELASTICITER  P(6,6) ENTRE    ***
+*** LES DEUX LIGNES TIRETEES CI-APRES DANS L'ORDRE  DE NUMEROTATION DES    ***
+***    NEOUDS -6F2 CHAQUE LIGNE *N.B :AUCUNE LIGNE VIDE LES MATRICES       ***
+***------------------------------------------------------------------------***
+***------------------------------------------------------------------------***
+*** NSPEED FOIS LE GROUPE DE CARTES CI-APRES (SI RHOL .NE. 0)              ***
+*** |   SI IUNIF=0, UNE SEULE CARTE /ROIN,ROEX,VITIN,VITEX/ NECESSAIRE     ***
+*** |   SI IUNIF=1, NELEMS CARTES /ROIN,ROEX,VITIN,VITEX/ NECESSAIRES      ***
+#### CAS DE PRESSION INTERNE OU FORCE AXIALE                               ###
+PRESM,PRESX                 =0.000000E+00 0.000000E+00
+#### CAS D'ÉCOULEMENT SUPERSONIC COMPRESSIBLE/POTENTIEL ET PARTIEL. REMPLI ###
+COMP,MACH,SOUND,PRESSURE-   =00 0.00 0000.00 0.000000E+00
+IUNIF - I2                  = 1
+ROIN,ROEX,VITIN,VITEX - 4f2 =0.100000E+04 0.000000E+00 3.680236E+01 0.000000E+00
+                             0.100000E+04 0.000000E+00 3.680236E+01 0.000000E+00
+                             0.100000E+04 0.000000E+00 3.680236E+01 0.000000E+00
+                             0.100000E+04 0.000000E+00 3.680236E+01 0.000000E+00
+                             0.100000E+04 0.000000E+00 3.680236E+01 0.000000E+00
+                             0.100000E+04 0.000000E+00 3.680236E+01 0.000000E+00
+                             0.100000E+04 0.000000E+00 3.680236E+01 0.000000E+00
+                             0.100000E+04 0.000000E+00 3.680236E+01 0.000000E+00
+                             0.100000E+04 0.000000E+00 3.680236E+01 0.000000E+00
+                             0.100000E+04 0.000000E+00 3.680236E+01 0.000000E+00
+                             0.100000E+04 0.000000E+00 3.680236E+01 0.000000E+00
+                             0.100000E+04 0.000000E+00 3.680236E+01 0.000000E+00
+                             0.100000E+04 0.000000E+00 3.680236E+01 0.000000E+00
+                             0.100000E+04 0.000000E+00 3.680236E+01 0.000000E+00
+                             0.100000E+04 0.000000E+00 3.680236E+01 0.000000E+00
+                             0.100000E+04 0.000000E+00 3.680236E+01 0.000000E+00
+                             0.100000E+04 0.000000E+00 3.680236E+01 0.000000E+00
+                             0.100000E+04 0.000000E+00 3.680236E+01 0.000000E+00
+                             0.100000E+04 0.000000E+00 3.680236E+01 0.000000E+00
+                             0.100000E+04 0.000000E+00 3.680236E+01 0.000000E+00
+                             0.100000E+04 0.000000E+00 3.680236E+01 0.000000E+00
+                             0.100000E+04 0.000000E+00 3.680236E+01 0.000000E+00
+                             0.100000E+04 0.000000E+00 3.680236E+01 0.000000E+00
+                             0.100000E+04 0.000000E+00 3.680236E+01 0.000000E+00
+### CAS D'UNE COUCHE LIMITE TURBULENTE                                     ###
+SA SB SC SD SK1 SK2         =0.000000E+00 0.000000E+00 0.000000E+00 0.000000E+00 0.000000E-00 0.000000E-00
+IDAM IDENT                  =0  0
+VITESSE UCLI=1, NNODE       =0.000000E+00 0.000000E+00 0.000000E+00 0.000000E+00 0.000000E+00 0.000000E+02
+IN JN KF KN                 =0    0    0    0
+ZETA(I) OU C(I)             =0.000000E-00

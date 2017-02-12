@@ -1,0 +1,10 @@
+prob case=test5853 ro equilibrium 
+
+ ! iac problem
+p,bar  7000
+reac
+  fuel  N2H4(L) wt%=100. t,k=298.15
+  oxid  N2H4(L) wt%=100. t,k=298.15
+output    short
+output trace=1e-5
+end
