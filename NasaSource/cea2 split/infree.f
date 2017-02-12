@@ -46,7 +46,7 @@ C
       Cin(Ncin) = ' '
       ch1(1) = ' '
       nch1 = 1
-C READ CHARACTERS, ONE AT A TIME
+C READ CHARACTERS, ONE AT A TIME of input file
       READ (IOINP,99001,END=500,ERR=500) ch1
 C FIND FIRST AND LAST NON-BLANK CHARACTER
       DO i = 132,1, - 1

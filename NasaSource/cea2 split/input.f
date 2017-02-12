@@ -27,7 +27,8 @@ C
       DATA uc/'ABCDEFGHIJKLMNOPQRSTUVWXYZ'/ !initialize uppercase
       DATA lc/'abcdefghijklmnopqrstuvwxyz'/ !initialize lowercase
       WRITE (IOOUT,99001) !ask for input file
-      Caseok = .TRUE.
+C   Initize variables
+      Caseok = .TRUE. 
       Nonly = 0
       Nomit = 0
       Nsert = 0
@@ -35,7 +36,7 @@ C
       Trace = 0
       Short = .FALSE.
       Massf = .FALSE.
-      DO i = 1,NCOL
+      DO i = 1,NCOL !from main function?
         Debug(i) = .FALSE.
       ENDDO
       Nplt = 0
