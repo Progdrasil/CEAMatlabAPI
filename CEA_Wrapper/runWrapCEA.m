@@ -16,10 +16,13 @@
     % Write data in wrapper.inp
     fprintf(IOinp,'prob case=wrapper ro equilibrium \n\n');
     fprintf(IOinp,' ! iac problem \n');
-    fprintf(IOinp,'p,bar  7000\n');
+    fprintf(IOinp,'o/f 3\n');
+    fprintf(IOinp,'p,psia  350\n');
+    fprintf(IOinp,'supar 4.84\n');
+    fprintf(IOinp,'pip 23.8\n');
     fprintf(IOinp,'reac\n');
-    fprintf(IOinp,'  fuel  N2H4(L) wt%%=100. t,k=298.15\n');
-    fprintf(IOinp,'  oxid  N2H4(L) wt%%=100. t,k=298.15\n');
+    fprintf(IOinp,'  fuel  paraffin wt%%=100. t,k=298.15\n');
+    fprintf(IOinp,'  oxid  N2O wt%%=100. t,k=298.15\n');
     fprintf(IOinp,'output    short\n');
     fprintf(IOinp,'output trace=1e-5\n');
     fprintf(IOinp,'end\n');

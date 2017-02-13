@@ -12,68 +12,23 @@
  prob case=wrapper ro equilibrium
   
   ! iac problem
- p,bar  7000
+ o/f 3
+ p,psia  350
+ supar 4.84
+ pip 23.8
  reac
-   fuel  N2H4(L) wt%=100. t,k=298.15
-   oxid  N2H4(L) wt%=100. t,k=298.15
+   fuel  paraffin wt%=100. t,k=298.15
+   oxid  N2O wt%=100. t,k=298.15
  output    short
  output trace=1e-5
  end
 
+ YOUR ASSIGNED TEMPERATURE  298.15K FOR paraffin       
+IS OUTSIDE ITS TEMPERATURE RANGE20000.00 TO     0.00K (REACT)
 
+ ERROR IN REACTANTS DATASET (INPUT)
 
-
-
-              THEORETICAL ROCKET PERFORMANCE ASSUMING EQUILIBRIUM
-
-           COMPOSITION DURING EXPANSION FROM INFINITE AREA COMBUSTOR
-
- Pin =101526.8 PSIA
- CASE = wrapper        
-
-             REACTANT                    WT FRACTION      ENERGY      TEMP
-                                          (SEE NOTE)     KJ/KG-MOL      K  
- FUEL        N2H4(L)                      1.0000000     50380.000    298.150
- OXIDANT     N2H4(L)                      1.0000000     50380.000    298.150
-
- O/F=    1.00000  %FUEL= 50.000000  R,EQ.RATIO= 0.000000  PHI,EQ.RATIO=-1.000000
-
-                 CHAMBER   THROAT
- Pinf/P            1.0000   1.8128
- P, BAR           7000.00  3861.33
- T, K             1203.81  1071.95
- RHO, KG/CU M    9.2094 2 5.7631 2
- H, KJ/KG         1572.16  1147.35
- U, KJ/KG          812.06   477.34
- G, KJ/KG        -11710.1 -10680.1
- S, KJ/(KG)(K)    11.0336  11.0336
-
- M, (1/n)          13.168   13.302
- (dLV/dLP)t      -1.11230 -1.11365
- (dLV/dLT)p        1.6275   1.7074
- Cp, KJ/(KG)(K)    5.1546   5.6054
- GAMMAs            1.2693   1.2681
- SON VEL,M/SEC      982.2    921.7
- MACH NUMBER        0.000    1.000
-
- PERFORMANCE PARAMETERS
-
- Ae/At                      1.0000
- CSTAR, M/SEC               1317.7
- CF                         0.6995
- Ivac, M/SEC                1648.6
- Isp, M/SEC                  921.7
-
-
- MOLE FRACTIONS
-
- *H2             4.7269-1 4.6222-1
- NH3             2.3278-1 2.4534-1
- *N2             2.9454-1 2.9244-1
-
-  * THERMODYNAMIC PROPERTIES FITTED TO 20000.K
-
- NOTE. WEIGHT FRACTION OF FUEL IN TOTAL FUELS AND OF OXIDANT IN TOTAL OXIDANTS
+ FATAL ERROR IN DATASET (INPUT)
 
 
 
