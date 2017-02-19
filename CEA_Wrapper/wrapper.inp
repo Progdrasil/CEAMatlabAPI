@@ -6,8 +6,8 @@ p,psia  350
 supar 4.84
 pip 23.8
 reac
-  fuel  paraffin wt%=100. t,k=298.15
-  oxid  N2O wt%=100. t,k=298.15
-output    short
+  fuel  paraffin wt%=49. t,k=298.15
+  fuel  00 wt%=  oxid  N2O wt%=49. t,k=298.15
+  oxid  00 wt%=output    short
 output trace=1e-5
 end

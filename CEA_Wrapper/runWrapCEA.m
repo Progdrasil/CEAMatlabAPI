@@ -10,19 +10,30 @@
     % return data in a table or struct 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
+    %%% Debug variables
+    OF = 3;
+    pression = 350;
+    presUnt = 'psia';
+    supar = 4.84;
+    PcPe = 23.8;
+    fuel = 'paraffin';
+    fuelWt = '100';
+    oxid = 'N2O';
+    oxidWt = '100';
+    
     % Open wrapper.inp and overwrite
     IOinp = fopen('wrapper.inp','w');
     
     % Write data in wrapper.inp
     fprintf(IOinp,'prob case=wrapper ro equilibrium \n\n');
     fprintf(IOinp,' ! iac problem \n');
-    fprintf(IOinp,'o/f 3\n');
-    fprintf(IOinp,'p,psia  350\n');
-    fprintf(IOinp,'supar 4.84\n');
-    fprintf(IOinp,'pip 23.8\n');
+    fprintf(IOinp,'o/f %g\n',OF);   %oxidiser to fuel ratio
+    fprintf(IOinp,'p,psia  %g\n',pression); %pressure
+    fprintf(IOinp,'supar %g\n',supar);  %supersonic area ratio
+    fprintf(IOinp,'pip %g\n',PcPe);    %Pc/Pe
     fprintf(IOinp,'reac\n');
-    fprintf(IOinp,'  fuel  paraffin wt%%=100. t,k=298.15\n');
-    fprintf(IOinp,'  oxid  N2O wt%%=100. t,k=298.15\n');
+    fprintf(IOinp,'  fuel  %s wt%%=%g. t,k=298.15\n',fuel,fuelWt); 
+    fprintf(IOinp,'  oxid  %s wt%%=%g. t,k=298.15\n',oxid,oxidWt);
     fprintf(IOinp,'output    short\n');
     fprintf(IOinp,'output trace=1e-5\n');
     fprintf(IOinp,'end\n');
@@ -32,12 +43,13 @@
 
     % ID OS and run CEA acordingly
     if ismac
-        currentpath = pwd;
-        [status,cmdout] = dos(strcat(currentpath,'/PCEA2.out'));
+        currentpath = which('runWrapCEA.m');
+        [pathstr,name,ext] = fileparts(currentpath);
+        [status,cmdout] = dos(strcat(pathstr,'/PCEA2.out'));
         disp(status)
         disp(cmdout)
     elseif isunix
-        currentpath = pwd;
+        currentpath = which('runWrapCEA.m');
         [status,cmdout] = dos(strcat(currentpath,'/PCEA2.out'));
         disp(status)
         disp(cmdout)

@@ -1,0 +1,14 @@
+ prob case=11118872 ro equilibrium
+  
+  
+  ! iac problem
+ o/f 3 4 5 6
+ p,psia  350
+ supar 4.84
+ pip 23.8
+ reac
+  fuel  paraffin wt%=100 t,k=298.15
+   oxid  N2O wt%=100.  t,k=298.15
+ output    short
+ output trace=1e-5
+ end

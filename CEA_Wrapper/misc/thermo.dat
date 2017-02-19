@@ -2134,4 +2134,5 @@
  N2O4(L)          g 6/96  -0.175490E+05     Dinitrogen tetroxide. McBride,1996 pp85,93.                   
  O2(L)            g 6/96  -0.129790E+05     Oxygen. McBride,1996 pp85,93.                                 
  O3(L)            g 6/96   0.122527E+06     Ozone. McBride,1996 pp85,93.                                  
+ paraffin         z08/09  -0.186060E+07    Morton Thiokol                                           React.
  RP-1             gll/00  -0.247177E+05     Mehta et.al. AIAA 95-2962 1995. Hcomb(high) = 19923.BTU/#     
