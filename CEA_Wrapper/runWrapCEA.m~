@@ -61,8 +61,11 @@
         disp('Platform not supported')
     end  
 
-%     IOout = fopen(strcat(pathstr,'/wrapper.dat'),'r');
-    data = ReadOutput(strcat(pathstr,'/wrapper.dat'));
-%     fclose(IOout);
+    IOout = fopen(strcat(pathstr,'/wrapper.dat'),'r');
+    tline = fgets(IOout) ;
+    data = ReadOutput(IOout);
+    
+    
+    fclose(IOout);
 % end
 

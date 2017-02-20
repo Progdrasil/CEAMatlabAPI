@@ -104,8 +104,9 @@ C***********************************************************************
       IMPLICIT NONE
       INCLUDE 'cea.inc'
 C LOCAL VARIABLES
+      CHARACTER(len=255) :: cwd
       CHARACTER*15 ensert(20)
-      CHARACTER*200 infile,ofile
+      CHARACTER*200 infile,ofile,scratchFile,thermoFile,transFile
       CHARACTER*196 prefix
       LOGICAL caseok,ex,readok
       INTEGER i,inc,iof,j,ln,n
@@ -117,11 +118,22 @@ C LOCAL VARIABLES
 C
 C     WRITE (*,99001) ! Ask for input file name
 C     READ (*,99002) prefix ! Get input file name from user
+
+      CALL getcwd(cwd)
+      cwd = TRIM(cwd)//'/CEA_Wrapper/'
+
       prefix = 'wrapper'
       ln = INDEX(prefix,' ') - 1 
       infile = prefix(1:ln)//'.inp' !add file suffix for input file
+      infile = TRIM(cwd)//TRIM(infile)
       ofile = prefix(1:ln)//'.dat'  !add file suffix for output file
+      ofile = TRIM(cwd)//TRIM(ofile)
       Pfile = prefix(1:ln)//'.plt'  !add file suffix for... i dont know
+      Pfile = TRIM(cwd)//TRIM(Pfile)
+      !scratchFile = TRIM(cwd)//'scratch'
+      thermoFile = TRIM(cwd)//'thermo.lib'
+      transFile = TRIM(cwd)//'trans.lib'
+
       INQUIRE (FILE=infile,EXIST=ex)! Get information on opened files
       IF ( .NOT.ex ) THEN !if file does not exist then
         PRINT *,infile,' DOES NOT EXIST' !tell user the file doesnt exist
@@ -130,8 +142,8 @@ C     READ (*,99002) prefix ! Get input file name from user
       OPEN (IOINP,FILE=infile,STATUS='old',FORM='formatted')! open input file given by user
       OPEN (IOOUT,FILE=ofile,STATUS='unknown',FORM='formatted') !create and open output file
       OPEN (IOSCH,STATUS='scratch',FORM='unformatted')! FIND OUT
-      OPEN (IOTHM,FILE='thermo.lib',FORM='unformatted')!open termodynamics library 
-      OPEN (IOTRN,FILE='trans.lib',FORM='unformatted')!Open trans library (WHAT IS TRANS LIBRARY?)
+      OPEN (IOTHM,FILE=thermoFile,FORM='unformatted')!open termodynamics library 
+      OPEN (IOTRN,FILE=transFile,FORM='unformatted')!Open trans library (WHAT IS TRANS LIBRARY?)
       WRITE (IOOUT,99006) !make a seperation line in output
       WRITE (IOOUT,99007) !write authors and name of application in output
       WRITE (IOOUT,99006) !make another seperation line in output
