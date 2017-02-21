@@ -3079,12 +3079,12 @@ C
         ENDIF
         IF ( Siunit ) THEN
           rho = rho*1000.D0
-          WRITE (IOOUT,99021) rho
+          ! WRITE (IOOUT,99021) rho ! variable
         ELSE
-          WRITE (IOOUT,99022) rho
+          ! WRITE (IOOUT,99022) rho ! variable
         ENDIF
       ENDIF
-      WRITE (IOOUT,99008) Oxfl,pfuel,Eqrat,phi
+      ! WRITE (IOOUT,99008) Oxfl,pfuel,Eqrat,phi ! variable
       RETURN
 C***********************************************************************
       ENTRY OUT2
@@ -3196,12 +3196,12 @@ C PRESSURE
           IF ( mt.GT.0 ) Pltout(i+Iplt-ione,mt) = Ttt(i)
         ENDIF
       ENDDO
-      WRITE (IOOUT,Fmt) fp,(X(j),j=1,Npt)
+      ! WRITE (IOOUT,Fmt) fp,(X(j),j=1,Npt) ! variable
 C TEMPERATURE
       Fmt(4) = '13'
       Fmt(5) = ' '
       Fmt(7) = '2,'
-      WRITE (IOOUT,Fmt) 'T, K            ',(Ttt(j),j=1,Npt)
+      ! WRITE (IOOUT,Fmt) 'T, K            ',(Ttt(j),j=1,Npt) !variable
 C DENSITY
       DO i = 1,Npt
         IF ( Vlm(i).NE.0. ) X(i) = vnum/Vlm(i)
@@ -3217,7 +3217,7 @@ C ENTHALPY
       ENDDO
       Fmt(4) = Fmt(6)
       CALL VARFMT(X)
-      WRITE (IOOUT,Fmt) fh,(X(j),j=1,Npt)
+      ! WRITE (IOOUT,Fmt) fh,(X(j),j=1,Npt) ! variable
 C INTERNAL ENERGY
       DO i = 1,Npt
         X(i) = (Hsum(i)-Ppp(i)*Vlm(i)/Rr)*R
@@ -3225,7 +3225,7 @@ C INTERNAL ENERGY
      &       Pltout(i+Iplt-ione,mie) = X(i)
       ENDDO
       CALL VARFMT(X)
-      WRITE (IOOUT,Fmt) fu,(X(j),j=1,Npt)
+      ! WRITE (IOOUT,Fmt) fu,(X(j),j=1,Npt) ! variable
 C GIBBS ENERGY
       DO i = 1,Npt
         X(i) = (Hsum(i)-Ttt(i)*Ssum(i))*R
@@ -3241,29 +3241,29 @@ C GIBBS ENERGY
         ENDIF
       ENDDO
       CALL VARFMT(X)
-      WRITE (IOOUT,Fmt) fgi,(X(j),j=1,Npt)
+      ! WRITE (IOOUT,Fmt) fgi,(X(j),j=1,Npt) ! variable
 C ENTROPY
       Fmt(4) = '13'
       Fmt(5) = ' '
       Fmt(7) = '4,'
-      WRITE (IOOUT,Fmt) fs,(Ssum(j)*R,j=1,Npt)
-      WRITE (IOOUT,99009)
+      ! WRITE (IOOUT,Fmt) fs,(Ssum(j)*R,j=1,Npt) ! variable
+      ! WRITE (IOOUT,99009)! header empty line
 C MOLECULAR WEIGHT
       Fmt(7) = '3,'
-      WRITE (IOOUT,Fmt) 'M, (1/n)        ',(Wm(j),j=1,Npt)
-      IF ( .NOT.Gonly ) WRITE (IOOUT,Fmt) 'MW, MOL WT      ',
-     &                                (1.D0/Totn(j),j=1,Npt)
+      ! WRITE (IOOUT,Fmt) 'M, (1/n)        ',(Wm(j),j=1,Npt) ! variable
+      ! IF ( .NOT.Gonly ) WRITE (IOOUT,Fmt) 'MW, MOL WT      ',!variable
+    !  &                                (1.D0/Totn(j),j=1,Npt)
 C (DLV/DLP)T
       Fmt(7) = '5,'
-      IF ( Eql ) WRITE (IOOUT,Fmt) '(dLV/dLP)t      ',(Dlvpt(j),j=1,Npt)
+      ! IF ( Eql ) WRITE (IOOUT,Fmt) '(dLV/dLP)t      ',(Dlvpt(j),j=1,Npt) !variable
 C (DLV/DLT)P
       Fmt(7) = '4,'
-      IF ( Eql ) WRITE (IOOUT,Fmt) '(dLV/dLT)p      ',(Dlvtp(j),j=1,Npt)
+      ! IF ( Eql ) WRITE (IOOUT,Fmt) '(dLV/dLT)p      ',(Dlvtp(j),j=1,Npt) ! variable
 C HEAT CAPACITY
-      WRITE (IOOUT,Fmt) fc,(Cpr(j)*R,j=1,Npt)
+      ! WRITE (IOOUT,Fmt) fc,(Cpr(j)*R,j=1,Npt) ! variable
 C GAMMA(S)
       Fmt(7) = '4,'
-      WRITE (IOOUT,Fmt) 'GAMMAs          ',(Gammas(j),j=1,Npt)
+      ! WRITE (IOOUT,Fmt) 'GAMMAs          ',(Gammas(j),j=1,Npt)! variable
 C SONIC VELOCITY
       Fmt(7) = '1,'
       DO i = 1,Npt
@@ -3271,7 +3271,7 @@ C SONIC VELOCITY
         IF ( Nplt.NE.0.AND.i.GT.ione.AND.mson.GT.0 )
      &       Pltout(i+Iplt-ione,mson) = Sonvel(i)
       ENDDO
-      WRITE (IOOUT,Fmt) 'SON VEL,M/SEC   ',(Sonvel(j),j=1,Npt)
+      ! WRITE (IOOUT,Fmt) 'SON VEL,M/SEC   ',(Sonvel(j),j=1,Npt) ! variable
       RETURN
 C***********************************************************************
       ENTRY OUT3
@@ -3284,7 +3284,7 @@ C MASS OR MOLE FRACTIONS
         mamo = 'MOLE'
       ENDIF
       IF ( Eql ) THEN
-        WRITE (IOOUT,99010) mamo
+        ! WRITE (IOOUT,99010) mamo ! header
         notuse = 0
         DO k = 1,Ngc
           kok = .TRUE.
@@ -3320,7 +3320,7 @@ C MASS OR MOLE FRACTIONS
           ENDDO
           IF ( kin.EQ.1 ) THEN
             IF ( Trace.EQ.0. ) THEN
-              WRITE (IOOUT,99011) Prod(k),(X(i),i=1,Npt)
+              ! WRITE (IOOUT,99011) Prod(k),(X(i),i=1,Npt) ! variable
             ELSE
               CALL EFMT(Fmt(4),Prod(k),X)
             ENDIF
@@ -3331,21 +3331,21 @@ C MASS OR MOLE FRACTIONS
           ENDIF
         ENDDO
       ENDIF
-      WRITE (IOOUT,99012) Tg(4)
+      ! WRITE (IOOUT,99012) Tg(4) ! variable
       IF ( .NOT.Short ) THEN
-        WRITE (IOOUT,99013) mamo,tra
-        WRITE (IOOUT,99014) (Omit(i),i=1,notuse)
+        ! WRITE (IOOUT,99013) mamo,tra !header
+        ! WRITE (IOOUT,99014) (Omit(i),i=1,notuse) !variables
       ENDIF
-      IF ( .NOT.Moles ) WRITE (IOOUT,99015)
+      ! IF ( .NOT.Moles ) WRITE (IOOUT,99015)! warning
       GOTO 200
 C***********************************************************************
       ENTRY OUT4
-      WRITE (IOOUT,99009)
-      WRITE (IOOUT,99016)
+      ! WRITE (IOOUT,99009) !header empty line
+      ! WRITE (IOOUT,99016) !header
       IF ( Siunit ) THEN
-        WRITE (IOOUT,99018)
+        ! WRITE (IOOUT,99018) ! header
       ELSE
-        WRITE (IOOUT,99017)
+        ! WRITE (IOOUT,99017) ! header
       ENDIF
 C TRANSPORT PROPERTIES
       Fmt(4) = Fmt(6)
@@ -3361,26 +3361,26 @@ C TRANSPORT PROPERTIES
         ENDDO
       ENDIF
       CALL VARFMT(Vis)
-      WRITE (IOOUT,Fmt) 'VISC,MILLIPOISE',(Vis(j),j=1,Npt)
+      ! WRITE (IOOUT,Fmt) 'VISC,MILLIPOISE',(Vis(j),j=1,Npt) ! variable
       Fmt(4) = '13'
       Fmt(5) = ' '
       Fmt(7) = '4,'
       IF ( Eql ) THEN
-        WRITE (IOOUT,99019)
+        ! WRITE (IOOUT,99019) !header
 C SPECIFIC HEAT
-        WRITE (IOOUT,Fmt) fc,(Cpeql(j),j=1,Npt)
+        ! WRITE (IOOUT,Fmt) fc,(Cpeql(j),j=1,Npt)! variables
 C CONDUCTIVITY
-        WRITE (IOOUT,Fmt) 'CONDUCTIVITY    ',(Coneql(j),j=1,Npt)
+        ! WRITE (IOOUT,Fmt) 'CONDUCTIVITY    ',(Coneql(j),j=1,Npt)! variable
 C PRANDTL NUMBER
-        WRITE (IOOUT,Fmt) 'PRANDTL NUMBER  ',(Preql(j),j=1,Npt)
+        ! WRITE (IOOUT,Fmt) 'PRANDTL NUMBER  ',(Preql(j),j=1,Npt) ! variable
       ENDIF
-      WRITE (IOOUT,99020)
+      ! WRITE (IOOUT,99020) ! header
 C SPECIFIC HEAT
-      WRITE (IOOUT,Fmt) fc,(Cpfro(j),j=1,Npt)
+      ! WRITE (IOOUT,Fmt) fc,(Cpfro(j),j=1,Npt) !variable
 C CONDUCTIVITY
-      WRITE (IOOUT,Fmt) 'CONDUCTIVITY    ',(Confro(j),j=1,Npt)
+      ! WRITE (IOOUT,Fmt) 'CONDUCTIVITY    ',(Confro(j),j=1,Npt) ! variable
 C PRANDTL NUMBER
-      WRITE (IOOUT,Fmt) 'PRANDTL NUMBER  ',(Prfro(j),j=1,Npt)
+      ! WRITE (IOOUT,Fmt) 'PRANDTL NUMBER  ',(Prfro(j),j=1,Npt) ! variable
  200  RETURN
 99001 FORMAT (' CASE = ',a15)
 99002 FORMAT (/13X,'REACTANT',20x,a11,'      ENERGY',6x,'TEMP')
