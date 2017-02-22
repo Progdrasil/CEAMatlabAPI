@@ -120,7 +120,7 @@ C     WRITE (*,99001) ! Ask for input file name
 C     READ (*,99002) prefix ! Get input file name from user
 
       CALL getcwd(cwd)
-      cwd = TRIM(cwd)//'/CEA_Wrapper/'
+      cwd = TRIM(cwd)//'\CEA_Wrapper\'
 
       prefix = 'wrapper'
       ln = INDEX(prefix,' ') - 1 
