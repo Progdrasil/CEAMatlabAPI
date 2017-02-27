@@ -1,4 +1,4 @@
-function [ data ] = runWrapCEA( OF,pressure, supar, PcPe, fuel, fuelWt, oxid, oxidWt)
+function [ data ] = runWrapCEA( OF,pressure, supar, PcPe, fuel, fuelWt, oxid, oxidWt, folder_name,Debug)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Takes in as input information to write in wrapper.inp file
     % write wrapper.inp file
@@ -18,6 +18,9 @@ function [ data ] = runWrapCEA( OF,pressure, supar, PcPe, fuel, fuelWt, oxid, ox
     %   fuelwt = mass fraction percentage of fuel [array of numbers]
     %   oxid = name of oxidiser(s) [cell array of strings]
     %   oxidwt = mass fraction percentage of oxidizers [array of numbers]
+    %   folder_name = name of folder to add output file [string]
+    %   Debug = to display time of computation of each major part of
+    %   program [boolean]
     % 
     % fuel and fuelWt must always be of same size, same for oxid and oxidWt
     %
@@ -30,6 +33,9 @@ function [ data ] = runWrapCEA( OF,pressure, supar, PcPe, fuel, fuelWt, oxid, ox
     %       - EXIT
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
+    if nargin < 10
+        Debug = false;
+    end
     %%% Debug variables
     
 %     clear all;
@@ -56,7 +62,9 @@ function [ data ] = runWrapCEA( OF,pressure, supar, PcPe, fuel, fuelWt, oxid, ox
         oxidWt = oxidWt*100;
     end
     
-    
+    if Debug
+        c1 = clock;
+    end
     % Open wrapper.inp and overwrite
     IOinp = fopen(strcat(pathstr,'/wrapper.inp'),'w');
     
@@ -88,26 +96,51 @@ function [ data ] = runWrapCEA( OF,pressure, supar, PcPe, fuel, fuelWt, oxid, ox
     
     % Close wrapper.inp
     fclose(IOinp);
+    if Debug
+        c1 = clock - c1;
+        fprintf('time to write input file = %16.15e sec \n',c1(end))
+    end
 
+    if Debug
+        c2 = clock;
+    end
     % ID OS and run CEA acordingly
     if ismac
         [status,cmdout] = dos(strcat(pathstr,'/PCEA2.out'));
-        disp(status)
-        disp(cmdout)
+%         disp(status)
+%         disp(cmdout)
     elseif isunix
         [status,cmdout] = dos(strcat(pathstr,'/PCEA2.out'));
-        disp(status)
-        disp(cmdout)
+%         disp(status)
+%         disp(cmdout)
     elseif ispc
         [status,cmdout] = dos('PCEA2.exe');
-        disp(status)
-        disp(cmdout)
+%         disp(status)
+%         disp(cmdout)
     else
         disp('Platform not supported')
     end  
-
-
+    if Debug
+        c2 = clock - c2;
+        fprintf('time to run CEA = %16.15e sec \n',c2(end))
+    end
+    
+    if Debug
+        c3 = clock;
+    end
+    % read output file and create struct
     data = ReadOutput(strcat(pathstr,'/wrapper.dat'));
+    if Debug
+        c3 = clock - c3;
+        fprintf('time to read output file = %16.15e sec \n',c3(end))
+    end
+    
+    if exist(folder_name,'dir') ~= 7
+        mkdir(folder_name);
+    end
+    
+    movefile(strcat(pathstr,'/wrapper.dat'),strcat(folder_name,'/OF',num2str(OF),'_P',num2str(pressure),'.dat'));
+
 
 end
 

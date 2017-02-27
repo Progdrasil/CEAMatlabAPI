@@ -101,6 +101,17 @@ C            IF(ipp.LE.Npp)ipp=ipp-1 to IF(ipp.LT.Npp.OR.Npp.EQ.4) ...
 C 02/05/04 - Chg. numbered ENDDO's to CONTINUE's for Watson compiler.
 C 05/21/04 - Added labels to columns in .plt file
 C***********************************************************************
+#include "fintrf.h"
+      SUBROUTINE MexFunction(nlhs, plhs, nrhs, prhs)
+C     Declarations
+      IMPLICIT NONE
+
+      mwPointer plhs(*), prhs(*)
+      integer nlhs, nrhs
+
+      END
+
+      SUBROUTINE CEA(inp,data)
       IMPLICIT NONE
       INCLUDE 'cea.inc'
 C LOCAL VARIABLES
