@@ -38,7 +38,7 @@ function [ data ] = runWrapCEA( OF,pressure, supar, PcPe, fuel, fuelWt, fuelTemp
     %   data = runWrapCEA( 3 , 350 , 4.84 , 23.8 , 'paraffin' , 100, 298.15 , 'N2O', 100, 'testDir',false)
     %
     % with multiple fuels and oxidizers
-    %   data = runWrapCEA( 3 , 350 , 4.84 , 23.8 , {'paraffin' 'CH4' 'RP-1'} , [50 25 25], [298.15 298.15 298.15], {'N2O' 'O2(L)'}, [75 25],[298.15 90.1], 'testDir',true)
+    %   data = runWrapCEA( 3 , 350 , 4.84 , 23.8 , {'paraffin' 'CH4' 'RP-1'} , [50 25 25], [], {'N2O' 'O2(L)'}, [75 25], 'testDir',true)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     if nargin < 10
@@ -86,17 +86,17 @@ function [ data ] = runWrapCEA( OF,pressure, supar, PcPe, fuel, fuelWt, fuelTemp
     fprintf(IOinp,'reac\n');
     if length(fuelWt)>1
         for i = 1:length(fuelWt)
-            fprintf(IOinp,'  fuel  %s wt%%=%6.3f t,k=%6.2f\n',fuel{i},fuelWt(i),fuelTemp(i));
+            fprintf(IOinp,'  fuel  %s wt%%=%6.3f t,k=298.15\n',fuel{i},fuelWt(i));
         end
     else
-        fprintf(IOinp,'  fuel  %s wt%%=%g. t,k=%6.2f\n',fuel,fuelWt,fuelTemp);
+        fprintf(IOinp,'  fuel  %s wt%%=%g. t,k=298.15\n',fuel,fuelWt);
     end
     if length(oxidWt)>1
         for i = 1:length(oxidWt)
-            fprintf(IOinp,'  oxid  %s wt%%=%6.3f t,k=%6.2f\n',oxid{i},oxidWt(i),oxidTemp(i));
+            fprintf(IOinp,'  oxid  %s wt%%=%6.3f t,k=298.15\n',oxid{i},oxidWt(i));
         end
     else
-        fprintf(IOinp,'  oxid  %s wt%%=%g. t,k=%6.2f\n',oxid,oxidWt,oxidTemp);
+        fprintf(IOinp,'  oxid  %s wt%%=%g. t,k=298.15\n',oxid,oxidWt);
     end
     fprintf(IOinp,'output    short\n');
     fprintf(IOinp,'output trace=1e-5\n');

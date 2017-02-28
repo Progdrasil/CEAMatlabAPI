@@ -106,12 +106,20 @@ C***********************************************************************
 C     Declarations
       IMPLICIT NONE
 
+      !mex Function arguments
       mwPointer plhs(*), prhs(*)
       integer nlhs, nrhs
 
+      !Function declarations:
+      mwPointer mxCreateStructMatrix(m, n, nfields, fieldnames)
+      mwSize m, n
+      integer*4 nfields
+      character*(*) fieldnames(nfields)
+
+
       END
 
-      SUBROUTINE CEA(inp,data)
+      SUBROUTINE CEA
       IMPLICIT NONE
       INCLUDE 'cea.inc'
 C LOCAL VARIABLES
