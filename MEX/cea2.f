@@ -108,14 +108,18 @@ C     Declarations
 
       !mex Function arguments
       mwPointer plhs(*), prhs(*)
-      integer nlhs, nrhs
+      integer nlhs
+      CHARACTER*(*) nrhs
 
       !Function declarations:
       mwPointer mxCreateStructMatrix(m, n, nfields, fieldnames)
       mwSize m, n
       integer*4 nfields
       character*(*) fieldnames(nfields)
+      mwPointer mxCreateString(str)
+      CHARACTER*(*) str
 
+      nrhs = mxCopyPtrToCharacter(prhs(*))
 
       END
 
