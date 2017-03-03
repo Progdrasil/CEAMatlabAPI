@@ -122,14 +122,14 @@ function [ data ] = runWrapCEA( OF,pressure, supar, PcPe, fuel, fuelWt, fuelTemp
 %         disp(status)
 %         disp(cmdout)
     elseif ispc
-        [status,cmdout] = dos('PCEA2.exe');
+        [status,cmdout] = dos(strcat(pathstr,'/PCEA2.exe'));
 %         disp(status)
 %         disp(cmdout)
     else
         disp('Platform not supported')
     end  
     % wait until wrapper.dat exists
-    while exist('wrapper.dat','file')==0
+    while exist(strcat(pathstr,'/wrapper.dat'),'file')==0
     end
     
     if Debug
