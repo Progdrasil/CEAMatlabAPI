@@ -122,7 +122,7 @@ function [ data ] = runWrapCEA( OF,pressure, supar, PcPe, fuel, fuelWt, fuelTemp
 %         disp(status)
 %         disp(cmdout)
     elseif ispc
-        [status,cmdout] = dos(strcat(pathstr,'/PCEA2.exe'));
+        [status,cmdout] = dos(strcat(pathstr,'\PCEA2.exe'));
 %         disp(status)
 %         disp(cmdout)
     else
