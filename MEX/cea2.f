@@ -102,61 +102,156 @@ C 02/05/04 - Chg. numbered ENDDO's to CONTINUE's for Watson compiler.
 C 05/21/04 - Added labels to columns in .plt file
 C***********************************************************************
 #include "fintrf.h"
+#if 0
+C     
+C     revord.F
+C     .F file needs to be preprocessed to generate .for equivalent
+C     
+#endif
+C-----------------------------------------------------------------------
+C     Gateway routine
       SUBROUTINE MexFunction(nlhs, plhs, nrhs, prhs)
 C     Declarations
       IMPLICIT NONE
 
       !mex Function arguments
       mwPointer plhs(*), prhs(*)
-      integer nlhs
-      CHARACTER*(*) nrhs
+      INTEGER nlhs, nrhs
 
       !Function declarations:
-      mwPointer mxCreateStructMatrix(m, n, nfields, fieldnames)
-      mwSize m, n
-      integer*4 nfields
-      character*(*) fieldnames(nfields)
-      mwPointer mxCreateString(str)
-      CHARACTER*(*) str
+      mwPointer mxCreateString
+      mwPointer mxGetString       
+      mwPointer mxGetM, mxGetN
+      INTEGER mxIsChar
 
-      nrhs = mxCopyPtrToCharacter(prhs(*))
+        INTEGER status1, status2
 
+      !Arguments for CEA Routine
+      mwSize  maxbuf
+      PARAMETER(maxbuf = 100)
+      CHARACTER*100 inputPath, inputFile, outputFile
+      mwPointer pathLn,fileLn
+C-----------------------------------------------------------------------
+!       if (nrhs .LT. 1) then
+!          call mexErrMsgTxt ('One input required.')
+!       elseif (nlhs .gt. 1) then
+!          call mexErrMsgTxt ('Too many output arguments.')
+! C     The input must be a string.
+!       elseif(mxIsChar(prhs(1)) .ne. 1) then
+!          call mexErrMsgTxt ('Input must be a string.')
+! C     The input must be a row vector.
+!       elseif (mxGetM(prhs(1)) .ne. 1) then
+!          call mexErrMsgTxt ('Input must be a row vector.')
+!       endif
+
+      !get length of input file strings
+      fileLn = mxGetM(prhs(1))*mxGetN(prhs(1))
+      pathLn = mxGetM(prhs(2))*mxGetN(prhs(2))
+      ! if (fileLn .gt. maxbuf) then
+      !    call mexErrMsgTxt ('Max string length 100.')
+      ! endif
+      ! if (pathLn .gt. maxbuf) then
+      !   call mexErrMsgTxt ('Max string length 100.')
+      ! endif
+
+      ! get string contents
+      status1 = MXGETSTRING(prhs(1),inputFile, maxbuf)
+      status2 = MXGETSTRING(prhs(2),inputPath, maxbuf)
+      ! if (status1 .ne. 0) then 
+      !    call mexErrMsgTxt ('Error reading string.')
+      ! endif
+      ! if (status2 .ne. 0) then 
+      !   call mexErrMsgTxt ('Error reading string.')
+      ! endif
+    
+
+      ! initialize output to empty string
+      outputFile = ''
+
+      ! call CEA
+      CALL CEA(inputPath,pathLn,inputFile,fileLn,outputFile)
+
+      ! set outputFile to MATLAB mexFunction Output
+      plhs(1) = MXCREATESTRING(outputFile)
+
+
+      RETURN
       END
-
-      SUBROUTINE CEA
+C-----------------------------------------------------------------------
+C     Computational routine
+      SUBROUTINE CEA(inputPath,pathLn,inputFile,fileLn,outputFile)!inputPath,pathLn,
       IMPLICIT NONE
       INCLUDE 'cea.inc'
 C LOCAL VARIABLES
       CHARACTER*15 ensert(20)
-      CHARACTER*200 infile,ofile
+      CHARACTER*200 infile,ofile,filePrim,pathPrim,thermoFile,transFile
       CHARACTER*196 prefix
-      LOGICAL caseok,ex,readok
-      INTEGER i,inc,iof,j,ln,n
+      CHARACTER inputFile(*),outputFile(*),inputPath(*)
+      LOGICAL caseok,ex,readok,inpop,outop
+      INTEGER i,inc,iof,j,n!,ln,ln2
+      mwSize  inputIndex,pathIndex,fileLn,pathLn
       INTEGER INDEX
       REAL*8 xi,xln
       REAL*8 DLOG
-      SAVE caseok,ensert,ex,i,inc,infile,iof,j,ln,n,ofile,prefix,readok, !saves variables, but where?
+      SAVE caseok,ensert,ex,i,inc,infile,iof,j,n,ofile,prefix,readok, !saves variables, but where?
      &  xi,xln
-C
-      WRITE (*,99001) ! Ask for input file name
-      READ (*,99002) prefix ! Get input file name from user
-      ln = INDEX(prefix,' ') - 1 
-      infile = prefix(1:ln)//'.inp' !add file suffix for input file
-      ofile = prefix(1:ln)//'.out'  !add file suffix for output file
-      Pfile = prefix(1:ln)//'.plt'  !add file suffix for... i dont know
+
+
+      filePrim = ''
+      DO 10 inputIndex = 1,fileLn
+        filePrim = TRIM(filePrim)//inputFile(inputIndex)
+10    CONTINUE
+      pathPrim = ''
+      DO 20 pathIndex = 1,pathLn
+        pathPrim = TRIM(pathPrim)//inputPath(pathIndex)
+20    CONTINUE
+      !add file suffix for input file
+      infile = TRIM(pathPrim)//TRIM(filePrim) !TRIM(pathPrim)//
+      infile = TRIM(infile)//'.inp'
+      !add file suffix for output file
+      ofile = TRIM(pathPrim)//TRIM(filePrim)
+      ofile = TRIM(ofile)//'.out'
+      !add file suffix for... i dont know
+      Pfile = TRIM(pathPrim)//TRIM(filePrim)
+      Pfile = TRIM(Pfile)//'.plt'
+
+      thermoFile = TRIM(pathPrim)//'/thermo.lib'
+      transFile = TRIM(pathPrim)//'/trans.lib'
+
+      INQUIRE (FILE=thermoFile,EXIST=ex)! Get information on opened files
+      IF ( .NOT.ex ) THEN !if file does not exist then
+        thermoFile = TRIM(pathPrim)//'\thermo.lib'
+        transFile = TRIM(pathPrim)//'\trans.lib'
+        INQUIRE (FILE=thermoFile,EXIST=ex)! Get information on opened files
+        IF ( .NOT.ex ) THEN !if file does not exist then
+          CALL mexErrMsgTxt('Cannot find thermo.lib and trans.lib')
+        ENDIF
+      ENDIF
+
+      outputFile(1:pathLn) = inputPath(1:pathLn)
+      outputFile(pathLn+1:fileLn+pathLn) = inputFile(1:fileLn)
+      outputFile(fileLn+pathLn+1) = '.'
+      outputFile(fileLn+pathLn+2) = 'o'
+      outputFile(fileLn+pathLn+3) = 'u'
+      outputFile(fileLn+pathLn+4) = 't'
+      ! outputFile = filePrim
+
+
       INQUIRE (FILE=infile,EXIST=ex)! Get information on opened files
       IF ( .NOT.ex ) THEN !if file does not exist then
-        PRINT *,infile,' DOES NOT EXIST' !tell user the file doesnt exist
+        CALL mexErrMsgTxt(infile)
+        ! PRINT *,infile,' DOES NOT EXIST' !tell user the file doesnt exist
         GOTO 400  !stop the program
       ENDIF
       OPEN (IOINP,FILE=infile,STATUS='old',FORM='formatted')! open input file given by user
       OPEN (IOOUT,FILE=ofile,STATUS='unknown',FORM='formatted') !create and open output file
       OPEN (IOSCH,STATUS='scratch',FORM='unformatted')! FIND OUT
-      OPEN (IOTHM,FILE='thermo.lib',FORM='unformatted')!open termodynamics library 
-      OPEN (IOTRN,FILE='trans.lib',FORM='unformatted')!Open trans library (WHAT IS TRANS LIBRARY?)
-      ! WRITE (IOOUT,99006) !make a seperation line in output
-      ! WRITE (IOOUT,99007) !write authors and name of application in output
-      ! WRITE (IOOUT,99006) !make another seperation line in output
+      OPEN (IOTHM,FILE=thermoFile,FORM='unformatted')!open termodynamics library 
+      OPEN (IOTRN,FILE=transFile,FORM='unformatted')!Open trans library (WHAT IS TRANS LIBRARY?)
+
+      WRITE (IOOUT,99006) !make a seperation line in output
+      WRITE (IOOUT,99007) !write authors and name of application in output
+      WRITE (IOOUT,99006) !make another seperation line in output
       readok = .TRUE.   ! Was able to read input file
       Newr = .FALSE.  
  100  Iplt = 0
@@ -167,7 +262,7 @@ C
           IF ( Oxf(iof).EQ.0..AND.B0p(1,1).NE.0. ) THEN
             DO i = 1,Nlm
               IF ( B0p(i,1).EQ.0..OR.B0p(i,2).EQ.0. ) THEN
-                ! WRITE (IOOUT,99008) ! Error message
+                WRITE (IOOUT,99008) ! Error message
                 GOTO 200
               ENDIF
             ENDDO
@@ -215,11 +310,11 @@ C INITIAL ESTIMATES
               IF ( Prod(j).EQ.ensert(i) ) THEN
                 Npr = Npr + 1
                 Jcond(Npr) = j
-                ! IF ( .NOT.Short ) WRITE (IOOUT,99003) Prod(j)
+                IF ( .NOT.Short ) WRITE (IOOUT,99003) Prod(j)
                 GOTO 120
               ENDIF
             ENDDO
-            ! WRITE (IOOUT,99004) ensert(i) ! Warning handling
+            WRITE (IOOUT,99004) ensert(i) ! Warning handling
  120      CONTINUE
         ENDIF
         IF ( Rkt ) THEN
@@ -247,7 +342,7 @@ C INITIAL ESTIMATES
       CLOSE (IOTHM)
       CLOSE (IOTRN)
       CLOSE (IOPLT)
- 400  STOP
+ 400  RETURN
 99001 FORMAT (//' ENTER INPUT FILE NAME WITHOUT .inp EXTENSION.'/ 
      &        '   THE OUTPUT FILES FOR LISTING AND PLOTTING WILL HAVE',/
      &       ' THE SAME NAME WITH EXTENSIONS .out AND .plt RESPECTIVELY'
@@ -497,7 +592,7 @@ C CALCULATE ENTHALPY FOR INITIAL ESTIMATE OF T2(TT AFTER EQLBRM)
             ii = 0
             tem = tt1 - .75*pp1/(Cpr(Npt)*Wmix)
             amm = Wm(Npt)/Wmix
-            ! IF ( Detdbg ) WRITE (IOOUT,99001) Tt! pass variable
+            IF ( Detdbg ) WRITE (IOOUT,99001) Tt! pass variable
 C LOOP FOR IMPROVING T2/T1 AND P2/P1 INITIAL ESTIMATE.
             DO ii = 1,3
               alfa = amm/tt1
@@ -505,7 +600,7 @@ C LOOP FOR IMPROVING T2/T1 AND P2/P1 INITIAL ESTIMATE.
      &              /(2.*gam*alfa)
               rk = pp1*alfa
               tt1 = tem + .5*pp1*gam*(rk*rk-1.)/(Wmix*Cpr(Npt)*rk)
-              ! IF ( Detdbg ) WRITE (IOOUT,99002) ii,pp1,tt1 ! pass variable
+              IF ( Detdbg ) WRITE (IOOUT,99002) ii,pp1,tt1 ! pass variable
             ENDDO
             Tp = .TRUE.
             Tt = t1*tt1
@@ -540,7 +635,7 @@ C BEGIN MAIN ITERATION LOOP.
               tt1 = tt1*EXP(x2*alam)
               Tt = t1*tt1
               ud = rr1*(Rr*gam*Tt/Wm(Npt))**.5
-              ! IF ( Detdbg ) WRITE (IOOUT,99003) itr,pp1,tt1,rr1,x1,x2 !pass variable
+              IF ( Detdbg ) WRITE (IOOUT,99003) itr,pp1,tt1,rr1,x1,x2 !pass variable
 C CONVERGENCE TEST
               IF ( itr.LT.8.AND.tem.GT.0.5E-04 ) GOTO 110
               IF ( itr.LT.8 ) THEN
@@ -553,7 +648,7 @@ C CONVERGENCE TEST
                   Vmoc(Npt) = ud/(Rr*gm1(Npt)*t1/Wmix)**.5
                 ENDIF
               ELSE
-                ! WRITE (IOOUT,99004) !error handling
+                WRITE (IOOUT,99004) !error handling
                 Npt = Npt - 1
                 Tt = 0.
               ENDIF
@@ -565,7 +660,7 @@ C CONVERGENCE TEST
               ENDIF
             ENDIF
 C OUTPUT
-            ! WRITE (IOOUT,99005) ! header
+            WRITE (IOOUT,99005) ! header
             CALL OUT1
 C SET MXX ARRAY FOR PLOTTING PARAMETERS
             DO i = 1,8
@@ -590,7 +685,7 @@ C SET MXX ARRAY FOR PLOTTING PARAMETERS
                 mmach = i
               ENDIF
             ENDDO
-            ! WRITE (IOOUT,99006) ! header
+            WRITE (IOOUT,99006) ! header
             Fmt(4) = '13'
             Fmt(5) = ' '
             Fmt(7) = '4,'
@@ -604,21 +699,21 @@ C SET MXX ARRAY FOR PLOTTING PARAMETERS
               ENDIF
               IF ( mp.GT.0 ) Pltout(i+Iplt,mp) = V(i)
             ENDDO
-            ! WRITE (IOOUT,Fmt) 'P1, '//unit//'        ',(V(j),j=1,Npt) ! variables
+            WRITE (IOOUT,Fmt) 'P1, '//unit//'        ',(V(j),j=1,Npt) ! variables
             Fmt(7) = '2,'
-            ! WRITE (IOOUT,Fmt) ft1,(tub(j),j=1,Npt) ! variables
-            ! IF ( .NOT.Siunit ) WRITE (IOOUT,Fmt) fh1,(h1(j),j=1,Npt) ! variables
-            ! IF ( Siunit ) WRITE (IOOUT,Fmt) fhs1,(h1(j),j=1,Npt) ! variables
+            WRITE (IOOUT,Fmt) ft1,(tub(j),j=1,Npt) ! variables
+            IF ( .NOT.Siunit ) WRITE (IOOUT,Fmt) fh1,(h1(j),j=1,Npt) ! variables
+            IF ( Siunit ) WRITE (IOOUT,Fmt) fhs1,(h1(j),j=1,Npt) ! variables
             DO i = 1,Npt
               V(i) = Wmix
               Sonvel(i) = (Rr*gm1(i)*tub(i)/Wmix)**.5
             ENDDO
             Fmt(7) = '3,'
-            ! WRITE (IOOUT,Fmt) fm1,(V(j),j=1,Npt) ! variables
+            WRITE (IOOUT,Fmt) fm1,(V(j),j=1,Npt) ! variables
             Fmt(7) = '4,'
-            ! WRITE (IOOUT,Fmt) fg1,(gm1(j),j=1,Npt) ! variables
+            WRITE (IOOUT,Fmt) fg1,(gm1(j),j=1,Npt) ! variables
             Fmt(7) = '1,'
-            ! WRITE (IOOUT,Fmt) 'SON VEL1,M/SEC ',(Sonvel(j),j=1,Npt) ! variables
+            WRITE (IOOUT,Fmt) 'SON VEL1,M/SEC ',(Sonvel(j),j=1,Npt) ! variables
             IF ( Nplt.GT.0 ) THEN
               DO i = 1,Npt
                 IF ( mt.GT.0 ) Pltout(i+Iplt,mt) = tub(i)
@@ -627,11 +722,11 @@ C SET MXX ARRAY FOR PLOTTING PARAMETERS
                 IF ( mson.GT.0 ) Pltout(i+Iplt,mson) = Sonvel(i)
               ENDDO
             ENDIF
-            ! WRITE (IOOUT,99007) ! header
+            WRITE (IOOUT,99007) ! header
             Fmt(4) = Fmt(6)
             CALL OUT2
             IF ( Trnspt ) CALL OUT4
-            ! WRITE (IOOUT,99008) ! header
+            WRITE (IOOUT,99008) ! header
             Fmt(7) = '3,'
             DO i = 1,Npt
               V(i) = Ppp(i)/pub(i)
@@ -640,23 +735,23 @@ C SET MXX ARRAY FOR PLOTTING PARAMETERS
               IF ( mmach.GT.0 ) Pltout(i+Iplt,mmach) = Vmoc(i)
               IF ( mdv.GT.0 ) Pltout(i+Iplt,mdv) = Sonvel(i)
             ENDDO
-            ! WRITE (IOOUT,Fmt) fpp1,(V(j),j=1,Npt) ! variables
-            ! WRITE (IOOUT,Fmt) ftt1,(Pcp(j),j=1,Npt) ! variables
+            WRITE (IOOUT,Fmt) fpp1,(V(j),j=1,Npt) ! variables
+            WRITE (IOOUT,Fmt) ftt1,(Pcp(j),j=1,Npt) ! variables
             DO i = 1,Npt
               V(i) = Wm(i)/Wmix
             ENDDO
             Fmt(7) = '4,'
-            ! WRITE (IOOUT,Fmt) fmm1,(V(j),j=1,Npt) ! variables
-            ! WRITE (IOOUT,Fmt) frr1,(rrho(j),j=1,Npt) ! variables
-            ! WRITE (IOOUT,Fmt) 'DET MACH NUMBER',(Vmoc(j),j=1,Npt) ! variables
+            WRITE (IOOUT,Fmt) fmm1,(V(j),j=1,Npt) ! variables
+            WRITE (IOOUT,Fmt) frr1,(rrho(j),j=1,Npt) ! variables
+            WRITE (IOOUT,Fmt) 'DET MACH NUMBER',(Vmoc(j),j=1,Npt) ! variables
             Fmt(7) = '1,'
-            ! WRITE (IOOUT,Fmt) fdv,(Sonvel(j),j=1,Npt) ! variables
+            WRITE (IOOUT,Fmt) fdv,(Sonvel(j),j=1,Npt) ! variables
             Eql = .TRUE.
             CALL OUT3
             Iplt = MIN(Iplt+Npt,500)
             IF ( Isv.EQ.0.AND.iof.EQ.Nof ) GOTO 200
             IF ( Np.EQ.1.AND.Nt.EQ.1 ) GOTO 100
-            ! WRITE (IOOUT,99009) ! variables
+            WRITE (IOOUT,99009) ! variables
             Npt = 0
  120        Npt = Npt + 1
             IF ( Isv.EQ.1 ) Isv = -1
@@ -727,7 +822,7 @@ C
           ne(i) = 0.
         ENDIF
       ENDDO
-      ! WRITE (IOOUT,frmt) Aa,(w(j),ne(j),j=j1,Npt) ! variables
+      WRITE (IOOUT,frmt) Aa,(w(j),ne(j),j=j1,Npt) ! variables
       END
       SUBROUTINE EQLBRM
 C***********************************************************************
@@ -801,8 +896,8 @@ C
             Jcond(k) = j + kg
             En(j+kg,Npt) = En(j,Npt)
             En(j,Npt) = 0.
-            ! IF ( Prod(j).NE.Prod(j+kg).AND..NOT.Short ) 
-    !  &           WRITE (IOOUT,99023) Prod(j),Prod(j+kg) ! variables
+            IF ( Prod(j).NE.Prod(j+kg).AND..NOT.Short ) 
+     &           WRITE (IOOUT,99023) Prod(j),Prod(j+kg) ! variables
           ENDIF
           GOTO 300
         ELSEIF ( kc.GE.Nc.OR.Ifz(kc+1).LE.Ifz(kc) ) THEN
@@ -814,7 +909,7 @@ C
         k = 1
         GOTO 100
       ENDIF
-      ! WRITE (IOOUT,99028) Prod(j) ! variables
+      WRITE (IOOUT,99028) Prod(j) ! variables
       En(j,Npt) = 0.D0
       Enln(j) = 0.D0
       Deln(j) = 0.D0
@@ -844,8 +939,8 @@ C
       lelim = 0
       lz = ls
       IF ( Ions ) lz = ls - 1
-      ! IF ( Npt.EQ.1.AND..NOT.Shock.AND..NOT.Short ) WRITE (IOOUT,99001) !variables
-    !  &     (Elmt(i),i=1,Nlm)
+      IF ( Npt.EQ.1.AND..NOT.Shock.AND..NOT.Short ) WRITE (IOOUT,99001) !variables
+     &     (Elmt(i),i=1,Nlm)
       IF ( Debug(Npt) ) THEN
         DO i = 1,Nlm
           cmp(i) = Elmt(i)
@@ -871,21 +966,21 @@ C BEGIN ITERATION
       IF ( Convg ) Imat = Imat - 1
       IF ( Debug(Npt) ) THEN
         IF ( .NOT.Convg ) THEN
-          ! WRITE (IOOUT,99004) numb ! variable
+          WRITE (IOOUT,99004) numb ! variable
         ELSE
-          ! IF ( .NOT.Pderiv ) WRITE (IOOUT,99002) ! header
-          ! IF ( Pderiv ) WRITE (IOOUT,99003) ! header
+          IF ( .NOT.Pderiv ) WRITE (IOOUT,99002) ! header
+          IF ( Pderiv ) WRITE (IOOUT,99003) ! header
         ENDIF
         kmat = Imat + 1
         DO i = 1,Imat
-          ! WRITE (IOOUT,99006) (G(i,k),k=1,kmat) ! variables
+          WRITE (IOOUT,99006) (G(i,k),k=1,kmat) ! variables
         ENDDO
       ENDIF
       Msing = 0
       CALL GAUSS
       IF ( Msing.EQ.0 ) THEN
         IF ( Debug(Npt) ) THEN
-          ! WRITE (IOOUT,99005) (cmp(k),k=1,le) ! variables
+          WRITE (IOOUT,99005) (cmp(k),k=1,le) ! variables
           WRITE (IOOUT,99006) (X(i),i=1,Imat) ! variables
         ENDIF
         IF ( .NOT.Convg ) THEN
@@ -949,18 +1044,18 @@ C CALCULATE CONTROL FACTOR,AMBDA
           ENDIF
           IF ( Debug(Npt) ) THEN
 C INTERMEDIATE OUTPUT
-            ! WRITE (IOOUT,99011) Tt,Enn,Ennl,Pp,Tm,ambda ! variables
+            WRITE (IOOUT,99011) Tt,Enn,Ennl,Pp,Tm,ambda ! variables
             IF ( ambda.NE.1.D0 ) THEN
               amb = 'ENN'
               IF ( DABS(X(iq2)).GT.DABS(X(Iq1)) ) amb = 'TEMP'
               IF ( ilamb.NE.0 ) amb = Prod(ilamb)
-              ! WRITE (IOOUT,99012) amb ! variables
+              WRITE (IOOUT,99012) amb ! variables
             ENDIF
-            ! IF ( Vol ) WRITE (IOOUT,99013) Vv*.001D0 ! variables
-            ! WRITE (IOOUT,99014) ! variables
+            IF ( Vol ) WRITE (IOOUT,99013) Vv*.001D0 ! variables
+            WRITE (IOOUT,99014) ! variables
             DO j = 1,Ngc
-              ! WRITE (IOOUT,99015) Prod(j),En(j,Npt),Enln(j),Deln(j), ! variables
-    !  &                       H0(j),S(j),H0(j) - S(j),Mu(j) 
+              WRITE (IOOUT,99015) Prod(j),En(j,Npt),Enln(j),Deln(j), ! variables
+     &                       H0(j),S(j),H0(j) - S(j),Mu(j) 
             ENDDO
           ENDIF
 C APPLY CORRECTIONS TO ESTIMATES
@@ -1027,13 +1122,13 @@ C CHECK ON REMOVING IONS
           ENDIF
 C TEST FOR CONVERGENCE
  560      IF ( numb.GT.maxitn ) THEN
-            ! WRITE (IOOUT,99019) maxitn,Npt !variables
+            WRITE (IOOUT,99019) maxitn,Npt !variables
             IF ( Nc.EQ.0.OR.i2many ) GOTO 1500
             i2many = .TRUE.
             IF ( .NOT.Hp.OR.Npt.NE.1.OR.Tt.GT.100. ) THEN
               IF ( Npr.NE.1.OR.Enn.GT.1.E-4 ) GOTO 1500
 C HIGH TEMPERATURE, INCLUDED CONDENSED CONDITION
-              ! WRITE (IOOUT,99020) ! header
+              WRITE (IOOUT,99020) ! header
               Enn = .1
               Ennl = -2.3025851
               Sumn = Enn
@@ -1048,7 +1143,7 @@ C HIGH TEMPERATURE, INCLUDED CONDENSED CONDITION
               k = 1
               GOTO 1000
             ELSE
-              ! WRITE (IOOUT,99008) ! warning
+              WRITE (IOOUT,99008) ! warning
               GOTO 1500
             ENDIF
           ELSE
@@ -1127,12 +1222,12 @@ C CHECK ON ELECTRON BALANCE
                     IF ( A(ls,j).NE.0. ) Enln(j) = Enln(j) + A(ls,j)
      &                   *dpie
                   ENDDO
-                  ! IF ( Debug(Npt) ) WRITE (IOOUT,99016) iter,dpie !variables
+                  IF ( Debug(Npt) ) WRITE (IOOUT,99016) iter,dpie !variables
                   IF ( DABS(dpie).GT..0001 ) THEN
                     X(le) = X(le) + dpie
                     iter = iter + 1
                     IF ( iter.LE.80 ) GOTO 566
-                    ! WRITE (IOOUT,99017) ! warning
+                    WRITE (IOOUT,99017) ! warning
                     GOTO 1500
                   ELSEIF ( Elmt(Nlm).EQ.'E'.AND.pie.NE.0. ) THEN
                     Nlm = Nlm - 1
@@ -1168,14 +1263,14 @@ C PRESSURE DERIVATIVE--CONVG=T, PDERIV=T
 C SINGULAR MATRIX
       ELSE
         IF ( Convg ) THEN
-          ! WRITE (IOOUT,99007) ! header
+          WRITE (IOOUT,99007) ! header
           Dlvpt(Npt) = -1.
           Dlvtp(Npt) = 1.
           Cpr(Npt) = Cpsum
           Gammas(Npt) = -1./(Dlvpt(Npt)+(Dlvtp(Npt)**2)*Enn/Cpr(Npt))
           GOTO 1400
         ELSE
-          ! WRITE (IOOUT,99009) numb,Msing ! variables
+          WRITE (IOOUT,99009) numb,Msing ! variables
           lsing = Msing
           ixsing = ixsing + 1
           IF ( ixsing.LE.8 ) THEN
@@ -1201,7 +1296,7 @@ C SINGULAR MATRIX
                 ENDIF
  570          CONTINUE
               IF ( j.GT.0 ) THEN
-                ! WRITE (IOOUT,99020) !header
+                WRITE (IOOUT,99020) !header
                 GOTO 1000
               ENDIF
             ELSEIF ( .NOT.Hp.OR.Npt.NE.1.OR.Nc.EQ.0.OR.Tt.GT.100. ) THEN
@@ -1209,7 +1304,7 @@ C SINGULAR MATRIX
                 IF ( Msing.LT.Iq1 ) THEN
                   IF ( reduce.AND.Msing.LE.Nlm ) THEN
                     IF ( Nlm.LT.lelim ) GOTO 1500
-                    ! WRITE (IOOUT,99010) Npt,Elmt(Nlm) !variables
+                    WRITE (IOOUT,99010) Npt,Elmt(Nlm) !variables
                     Nlm = Nlm - 1
                     GOTO 500
                   ELSEIF ( Msing.LE.Nlm ) THEN
@@ -1247,7 +1342,7 @@ C REMOVE CONDENSED SPECIES TO CORRECT SINGULARITY
  575          CONTINUE
               GOTO 500
             ELSE
-              ! WRITE (IOOUT,99008) ! warning
+              WRITE (IOOUT,99008) ! warning
             ENDIF
           ENDIF
         ENDIF
@@ -1269,14 +1364,14 @@ C CALCULATE ENTROPY, CHECK ON DELTA S FOR SP PROBLEMS
       ELSE
         tem = Ssum(Npt) - S0
         IF ( DABS(tem).GT..0005 ) GOTO 500
-        ! IF ( Debug(Npt) ) WRITE (IOOUT,99018) tem ! variables
+        IF ( Debug(Npt) ) WRITE (IOOUT,99018) tem ! variables
         Convg = .TRUE.
       ENDIF
 C CONVERGENCE TESTS ARE SATISFIED, TEST CONDENSED SPECIES.
  700  ncvg = ncvg + 1
       IF ( ncvg.GT.lncvg ) THEN
 C ERROR, SET TT=0
-        ! WRITE (IOOUT,99034) lncvg ! variables
+        WRITE (IOOUT,99034) lncvg ! variables
         GOTO 1500
       ELSE
         IF ( .NOT.Shock ) THEN
@@ -1284,11 +1379,11 @@ C ERROR, SET TT=0
             xx(il) = X(il)
           ENDDO
           IF ( .NOT.Short ) THEN
-            ! IF ( newcom ) WRITE (IOOUT,99021) (cmp(k),k=1,le) ! variables
-            ! WRITE (IOOUT,99022) Npt,numb,Tt,(xx(il),il=1,le) ! variables
+            IF ( newcom ) WRITE (IOOUT,99021) (cmp(k),k=1,le) ! variables
+            WRITE (IOOUT,99022) Npt,numb,Tt,(xx(il),il=1,le) ! variables
           ENDIF
           IF ( .NOT.Tp.AND.Npr.EQ.0.AND.Tt.LE.Tg(1)*.2D0 ) THEN
-            ! WRITE (IOOUT,99008) ! warning
+            WRITE (IOOUT,99008) ! warning
             GOTO 1500
           ENDIF
           newcom = .FALSE.
@@ -1354,8 +1449,8 @@ C ERROR, SET TT=0
           szgj = 0.
           DO inc = 1,Nc
             j = inc + Ng
-            ! IF ( Debug(Npt) ) WRITE (IOOUT,99024) Prod(j),Temp(1,inc), ! variables
-    !  &                               Temp(2,inc),En(j,Npt) 
+            IF ( Debug(Npt) ) WRITE (IOOUT,99024) Prod(j),Temp(1,inc), ! variables
+     &                               Temp(2,inc),En(j,Npt) 
             IF ( En(j,Npt).LE.0. ) THEN
               IF ( Tt.GT.Temp(1,inc).OR.Temp(1,inc).EQ.Tg(1) ) THEN
                 IF ( Tt.LE.Temp(2,inc) ) THEN
@@ -1373,7 +1468,7 @@ C ERROR, SET TT=0
                     ENDIF
                     ipr = ipr - 1
                   ENDIF
-                  ! IF ( Debug(Npt) ) WRITE (IOOUT,99025) delg,sizeg ! variables
+                  IF ( Debug(Npt) ) WRITE (IOOUT,99025) delg,sizeg ! variables
                 ENDIF
               ENDIF
             ENDIF
@@ -1383,7 +1478,7 @@ C ERROR, SET TT=0
             j = jdelg
             GOTO 800
           ELSE
-            ! WRITE (IOOUT,99026) Prod(jcons) ! variables
+            WRITE (IOOUT,99026) Prod(jcons) ! variables
             GOTO 1500
           ENDIF
  720      kk = MAX(0,kg)
@@ -1401,8 +1496,8 @@ C WRONG PHASE INCLUDED FOR T INTERVAL, SWITCH EN
           Jcond(ipr) = jkg
           En(j,Npt) = 0.
           jsw = j
-          ! IF ( Prod(j).NE.Prod(jkg).AND..NOT.Short ) WRITE (IOOUT,99023) ! variables
-    !  &         Prod(j),Prod(jkg)
+          IF ( Prod(j).NE.Prod(jkg).AND..NOT.Short ) WRITE (IOOUT,99023) ! variables
+     &         Prod(j),Prod(jkg)
           j = jkg
           GOTO 900
         ENDIF
@@ -1434,7 +1529,7 @@ C ADD CONDENSED SPECIES
         i = i - 1
       ENDDO
       Jcond(1) = j
-      ! IF ( .NOT.Short ) WRITE (IOOUT,99027) Prod(j) ! variables
+      IF ( .NOT.Short ) WRITE (IOOUT,99027) Prod(j) ! variables
  900  inc = j - Ng
       Convg = .FALSE.
       IF ( Tp ) cpcalc = .FALSE.
@@ -1447,7 +1542,7 @@ C REMOVE CONDENSED SPECIES
       DO i = k,Npr
         Jcond(i) = Jcond(i+1)
       ENDDO
-      ! IF ( .NOT.Short ) WRITE (IOOUT,99028) Prod(j) ! variables
+      IF ( .NOT.Short ) WRITE (IOOUT,99028) Prod(j) ! variables
       Npr = Npr - 1
       DO i = 1,Nlm
         IF ( cmp(i).EQ.Prod(j) ) THEN
@@ -1548,8 +1643,8 @@ C CALCULATE NEW COEFFICIENTS
           ENDIF
         ENDDO
         IF ( Debug(Npt) ) THEN
-          ! WRITE (IOOUT,99029) ! header
-          ! WRITE (IOOUT,99030) (cmp(k),k=1,nn) ! variable
+          WRITE (IOOUT,99029) ! header
+          WRITE (IOOUT,99030) (cmp(k),k=1,nn) ! variable
         ENDIF
       ENDIF
       IF ( Msing.NE.0 ) THEN
@@ -1602,7 +1697,7 @@ C SWITCH ORDER OF MSING AND NLM COMPONENTS
       Hsum(Npt) = Hsum(Npt)*Tt
       Wm(Npt) = 1./Enn
       gasfrc = Enn/Totn(Npt)
-      ! IF ( gasfrc.LT..0001 ) WRITE (IOOUT,99031) Npt,gasfrc ! variable
+      IF ( gasfrc.LT..0001 ) WRITE (IOOUT,99031) Npt,gasfrc ! variable
       IF ( Trace.NE.0. ) THEN
         DO 1450 j = 1,Ng
           IF ( lelim.NE.0 ) THEN
@@ -1613,17 +1708,17 @@ C SWITCH ORDER OF MSING AND NLM COMPONENTS
           IF ( Enln(j).GT.-87. ) En(j,Npt) = DEXP(Enln(j))
  1450   CONTINUE
       ENDIF
-      ! IF ( Debug(Npt) ) WRITE (IOOUT,99032) Npt,Pp,Tt,Hsum(Npt),! variable
-    !  &                      Ssum(Npt),Wm(Npt),Cpr(Npt),Dlvpt(Npt),
-    !  &                            Dlvtp(Npt),Gammas(Npt),Vlm(Npt)
+      IF ( Debug(Npt) ) WRITE (IOOUT,99032) Npt,Pp,Tt,Hsum(Npt),! variable
+     &                      Ssum(Npt),Wm(Npt),Cpr(Npt),Dlvpt(Npt),
+     &                            Dlvtp(Npt),Gammas(Npt),Vlm(Npt)
       IF ( Tt.GE.Tg(1).AND.Tt.LE.Tg(4) ) GOTO 1600
       IF ( Shock ) GOTO 1600
-      ! WRITE (IOOUT,99033) Tt,Npt ! variable
+      WRITE (IOOUT,99033) Tt,Npt ! variable
       IF ( Tt.GE.Tg(1)*.8D0.AND.Tt.LE.Tg(4)*1.1D0 ) GOTO 1600
       Npt = Npt + 1
  1500 Tt = 0.
       Npt = Npt - 1
-      ! WRITE (IOOUT,99035) Npt ! variables
+      WRITE (IOOUT,99035) Npt ! variables
  1600 Lsave = Nlm
       Nlm = ls
       IF ( Npr.GT.0 ) Gonly = .FALSE.
@@ -1753,7 +1848,7 @@ C
           Tt = DEXP(Tln)
         ENDIF
       ENDDO
-      ! WRITE (IOOUT,99001) ! error 
+      WRITE (IOOUT,99001) ! error 
  100  Tt = 0.
       Npt = Npt - 1
  200  RETURN
@@ -1897,7 +1992,7 @@ C SEARCH FOR REACTANT IN STORED THERMO SPECIES. STORE INDEX IN JRAY(N).
             IF ( Rname(n).EQ.Prod(j).OR.'*'//Rname(n).EQ.Prod(j) ) THEN
               Jray(n) = j
               IF ( j.GT.Ng ) THEN
-                ! WRITE (IOOUT,99001) ! error
+                WRITE (IOOUT,99001) ! error
                 GOTO 20
               ENDIF
               GOTO 50
@@ -1938,14 +2033,14 @@ C SEARCH THERMO.LIB FOR SPECIES.
                 ENDDO
                 GOTO 50
               ELSE
-                ! IF ( ifaz.GT.0 ) WRITE (IOOUT,99001) ! error
-                ! IF ( nint.EQ.0 ) WRITE (IOOUT,99002) Rname(n) ! error
+                IF ( ifaz.GT.0 ) WRITE (IOOUT,99001) ! error
+                IF ( nint.EQ.0 ) WRITE (IOOUT,99002) Rname(n) ! error
                 GOTO 20
               ENDIF
             ENDIF
           ENDDO
           Nspr = Nspr - 1
-          ! WRITE (IOOUT,99003) Rname(n) ! error
+          WRITE (IOOUT,99003) Rname(n) ! error
           Energy(n) = ' '
  20       Tt = 0.
           Cpmix = 0.
@@ -2061,7 +2156,7 @@ C IS STRING A KEYWORD SIGNALLING START OR END OF DATASET?
         IF ( Ncin.EQ.1 ) THEN
           Cin(Ncin) = w1
           IF ( w1(1:3).EQ.'end'.OR.w1.EQ.'ther'.OR.w1.EQ.'tran' ) THEN
-            ! WRITE (IOOUT,99002) (ch1(i),i=1,nch1) ! header
+            WRITE (IOOUT,99002) (ch1(i),i=1,nch1) ! header
             RETURN
           ENDIF
           ich1 = ich1 + 4
@@ -2074,10 +2169,10 @@ C KEYWORD READ FOR NEXT DATASET. END PROCESSING
           RETURN
         ENDIF
       ELSEIF ( Ncin.EQ.1 ) THEN
-        ! WRITE (IOOUT,99003) ! error
+        WRITE (IOOUT,99003) ! error
         GOTO 500
       ENDIF
-      ! WRITE (IOOUT,99002) (ch1(i),i=1,nch1) ! header
+      WRITE (IOOUT,99002) (ch1(i),i=1,nch1) ! header
       DO 400 i = ich1,nch1
         cx = ch1(i)
 C LOOK FOR DELIMITER STRINGS
@@ -2114,7 +2209,7 @@ C INTERNAL READ TO CONVERT TO NUMERIC
             READ (cnum,fmtl,ERR=320) Dpin(Ncin)
           ENDIF
           GOTO 340
-!  320      IF ( Cin(Ncin-1)(:4).NE.'case' ) WRITE (IOOUT,99004) Cin(i)! warning
+ 320      IF ( Cin(Ncin-1)(:4).NE.'case' ) WRITE (IOOUT,99004) Cin(i)! warning
           Lcin(Ncin) = 0
  340      Ncin = Ncin + 1
           Cin(Ncin) = ' '
@@ -2166,7 +2261,7 @@ C     gives the save atribute to the variables, so you can access them outsite t
 C
       DATA uc/'ABCDEFGHIJKLMNOPQRSTUVWXYZ'/ !initialize uppercase
       DATA lc/'abcdefghijklmnopqrstuvwxyz'/ !initialize lowercase
-      ! WRITE (IOOUT,99001) ! header empty line
+      WRITE (IOOUT,99001) ! header empty line
 C     Initialize variables
       Caseok = .TRUE.
       Nonly = 0
@@ -2213,7 +2308,7 @@ C CALL UTHERM TO CONVERT FORMATTED THERMODYNAMIC DATA
           REWIND IOTHM
           CALL UTHERM(Readok)
           IF ( .NOT.Readok ) THEN
-            ! WRITE (IOOUT,99025) ! error
+            WRITE (IOOUT,99025) ! error
             GOTO 400
           ENDIF
 C KEYWORD 'TRAN' READ
@@ -2221,7 +2316,7 @@ C CALL UTRAN TO CONVERT FORMATTED TRANSPORT PROPERTIES
         ELSEIF ( code.EQ.'tran' ) THEN
           CALL UTRAN(Readok)
           IF ( .NOT.Readok ) THEN
-            ! WRITE (IOOUT,99025) ! error
+            WRITE (IOOUT,99025) ! error
             GOTO 400
           ENDIF
 C PROCESS 'OUTP' DATASET.
@@ -2256,7 +2351,7 @@ C PROCESS 'OUTP' DATASET.
               ELSEIF ( cx2.EQ.'pl' ) THEN
                 pltdat = .TRUE.
               ELSE
-                ! WRITE (IOOUT,99002) cin(i) ! warning
+                WRITE (IOOUT,99002) cin(i) ! warning
               ENDIF
             ENDIF
  120      CONTINUE
@@ -2273,7 +2368,7 @@ C SORT AND STORE DATA FROM 'REAC' DATASET.
           IF ( i.LE.ncin ) THEN
             IF ( lcin(i).NE.0 ) THEN
               IF ( lcin(i).GT.0 ) THEN
-                ! WRITE (IOOUT,99003) cin(i) ! warning
+                WRITE (IOOUT,99003) cin(i) ! warning
                 GOTO 140
               ENDIF
               cx15 = cin(i)
@@ -2290,13 +2385,13 @@ C LOOK FOR PERCENTS
                     Pecwt(Nreac) = dpin(i)
                   ELSE
                     Caseok = .FALSE.
-                    ! WRITE (IOOUT,99004) ! error
+                    WRITE (IOOUT,99004) ! error
                   ENDIF
                   IF ( cx1.EQ.'m'.AND.Nreac.EQ.1 ) Moles = .TRUE.
                   IF ( cx1.EQ.'m'.AND..NOT.Moles.OR.cx1.EQ.'w'.AND.
      &                 Moles ) THEN
                     Caseok = .FALSE.
-                    ! WRITE (IOOUT,99005) ! error
+                    WRITE (IOOUT,99005) ! error
                   ENDIF
                   GOTO 140
                 ENDIF
@@ -2314,7 +2409,7 @@ C LOOK FOR TEMPERATURES
      &                     = (Rtemp(Nreac)-32.D0)/1.8D0 + 273.15D0
                     ENDIF
                   ELSE
-                    ! WRITE (IOOUT,99006) ! error
+                    WRITE (IOOUT,99006) ! error
                     Caseok = .FALSE.
                   ENDIF
                   GOTO 140
@@ -2361,7 +2456,7 @@ C CHECK FOR CHEMICAL SYMBOLS IN EXPLODED FORMULA
                   i = i + 1
                   GOTO 140
                 ENDIF
-                ! WRITE (IOOUT,99007) cin(i) ! warning
+                WRITE (IOOUT,99007) cin(i) ! warning
               ELSE
                 Nreac = MIN(Nreac+1,MAXR)
                 Fox(Nreac) = cx15
@@ -2500,7 +2595,7 @@ C ASSOCIATED NUMERICAL DATA.
               ELSEIF ( cx4.EQ.'ions' ) THEN
                 Ions = .TRUE.
               ELSE
-                ! WRITE (IOOUT,99002) cx15 ! warning
+                WRITE (IOOUT,99002) cx15 ! warning
               ENDIF
               lcin(i) = 0
             ENDIF
@@ -2523,33 +2618,33 @@ C ASSOCIATED NUMERICAL DATA.
           IF ( Siunit ) R = Rr/1000.
           IF ( Detn.OR.Shock ) Newr = .TRUE.
           IF ( .NOT.Short ) THEN
-            ! WRITE (IOOUT,99008) Tp,(Hp.AND..NOT.Vol),Sp,(Tp.AND.Vol),! variables
-    !  &                      (Hp.AND.Vol),(Sp.AND.Vol),Detn,Shock,refl,
-    !  &                      incd,Rkt,Froz,Eql,Ions,Siunit,Debugf,Shkdbg,
-    !  &                      Detdbg,Trnspt
-            ! IF ( T(1).GT.0. ) WRITE (IOOUT,99009) (T(jj),jj=1,Nt)! variable
-            ! WRITE (IOOUT,99010) Trace,S0,hr,ur! variables
-            ! IF ( Np.GT.0.AND.Vol ) WRITE (IOOUT,99011)! variable
-    !  &           (V(jj)*1.D-05,jj=1,Np)
+            WRITE (IOOUT,99008) Tp,(Hp.AND..NOT.Vol),Sp,(Tp.AND.Vol),! variables
+     &                      (Hp.AND.Vol),(Sp.AND.Vol),Detn,Shock,refl,
+     &                      incd,Rkt,Froz,Eql,Ions,Siunit,Debugf,Shkdbg,
+     &                      Detdbg,Trnspt
+            IF ( T(1).GT.0. ) WRITE (IOOUT,99009) (T(jj),jj=1,Nt)! variable
+            WRITE (IOOUT,99010) Trace,S0,hr,ur! variables
+            IF ( Np.GT.0.AND.Vol ) WRITE (IOOUT,99011)! variable
+     &           (V(jj)*1.D-05,jj=1,Np)
           ENDIF
           IF ( Rkt ) THEN
             IF ( Nt.EQ.0 ) Hp = .TRUE.
             IF ( .NOT.Short ) THEN
-              ! WRITE (IOOUT,99012) (P(jj),jj=1,Np) ! variable
-              ! WRITE (IOOUT,99013) (Pcp(jj),jj=1,Npp) ! variable
-              ! WRITE (IOOUT,99014) (Subar(i),i=1,Nsub) ! variable
-              ! WRITE (IOOUT,99015) (Supar(i),i=1,Nsup) ! variable
-              ! WRITE (IOOUT,99016) Nfz,Ma,Acat ! variable
+              WRITE (IOOUT,99012) (P(jj),jj=1,Np) ! variable
+              WRITE (IOOUT,99013) (Pcp(jj),jj=1,Npp) ! variable
+              WRITE (IOOUT,99014) (Subar(i),i=1,Nsub) ! variable
+              WRITE (IOOUT,99015) (Supar(i),i=1,Nsup) ! variable
+              WRITE (IOOUT,99016) Nfz,Ma,Acat ! variable
             ENDIF
           ELSE
-            ! IF ( .NOT.Vol.AND..NOT.Short ) WRITE (IOOUT,99017) ! variable
+            IF ( .NOT.Vol.AND..NOT.Short ) WRITE (IOOUT,99017) ! variable
      &           (P(jj),jj=1,Np)
           ENDIF
           IF ( reacts ) CALL REACT
           IF ( Nreac.EQ.0.OR.Nlm.LE.0 ) THEN
-            ! WRITE (IOOUT,99018) ! error
+            WRITE (IOOUT,99018) ! error
             Caseok = .FALSE.
-            ! WRITE (IOOUT,99025) ! error
+            WRITE (IOOUT,99025) ! error
             GOTO 400
           ENDIF
           IF ( Nof.EQ.0 ) THEN
@@ -2559,8 +2654,8 @@ C ASSOCIATED NUMERICAL DATA.
               Oxf(1) = Wp(1)/Wp(2)
             ELSE
               Caseok = .FALSE.
-              ! WRITE (IOOUT,99004) ! error
-              ! WRITE (IOOUT,99025) ! error
+              WRITE (IOOUT,99004) ! error
+              WRITE (IOOUT,99025) ! error
               GOTO 400
             ENDIF
           ELSEIF ( phi.OR.eqrats ) THEN
@@ -2575,8 +2670,8 @@ C ASSOCIATED NUMERICAL DATA.
               ENDIF
               IF ( DABS(denmtr).LT.1.D-30 ) THEN
                 Caseok = .FALSE.
-                ! WRITE (IOOUT,99019) eratio ! error
-                ! WRITE (IOOUT,99025) ! error
+                WRITE (IOOUT,99019) eratio ! error
+                WRITE (IOOUT,99025) ! error
                 GOTO 400
               ENDIF
               Oxf(i) = xyz/denmtr
@@ -2585,18 +2680,18 @@ C ASSOCIATED NUMERICAL DATA.
           IF ( .NOT.Sp.AND..NOT.Tp.AND..NOT.Hp.AND..NOT.Rkt.AND.
      &         .NOT.Detn.AND..NOT.Shock ) THEN
             Caseok = .FALSE.
-            ! WRITE (IOOUT,99020) ! error
+            WRITE (IOOUT,99020) ! error
           ELSEIF ( Tp.AND.T(1).LE.0. ) THEN
             Caseok = .FALSE.
-            ! WRITE (IOOUT,99021) ! error
+            WRITE (IOOUT,99021) ! error
           ELSEIF ( Np.LE.0 ) THEN
             Caseok = .FALSE.
-            ! WRITE (IOOUT,99022) ! error
+            WRITE (IOOUT,99022) ! error
           ENDIF
-          ! IF ( .NOT.(Caseok.AND.Nlm.GT.0) ) WRITE (IOOUT,99025) !error
+          IF ( .NOT.(Caseok.AND.Nlm.GT.0) ) WRITE (IOOUT,99025) !error
           GOTO 400
         ELSE
-          ! WRITE (IOOUT,99023) !warning
+          WRITE (IOOUT,99023) !warning
         ENDIF
       ENDIF
       GOTO 100
@@ -2631,7 +2726,7 @@ C PROCESS NUMERICAL DATA FOLLOWING 'PROB' LITERALS
         Nt = nmix
         IF ( nmix.GT.MAXMIX ) THEN
           Nt = MAXMIX
-          ! WRITE (IOOUT,99024) 't',Nt ! warning
+          WRITE (IOOUT,99024) 't',Nt ! warning
         ENDIF
         DO i = 1,Nt
           IF ( cx4.NE.'tces' ) THEN
@@ -2649,7 +2744,7 @@ C PROCESS NUMERICAL DATA FOLLOWING 'PROB' LITERALS
         Npp = nmix
         IF ( nmix.GT.2*NCOL ) THEN
           Npp = 2*NCOL
-          ! WRITE (IOOUT,99024) 'pcp',Npp ! warning
+          WRITE (IOOUT,99024) 'pcp',Npp ! warning
         ENDIF
         DO i = 1,Npp
           Pcp(i) = mix(i)
@@ -2658,7 +2753,7 @@ C PROCESS NUMERICAL DATA FOLLOWING 'PROB' LITERALS
         Np = nmix
         IF ( nmix.GT.MAXPV ) THEN
           Np = MAXPV
-          ! WRITE (IOOUT,99024) 'p',Np ! warning
+          WRITE (IOOUT,99024) 'p',Np ! warning
         ENDIF
         DO 350 i = 1,Np
           P(i) = mix(i)
@@ -2677,7 +2772,7 @@ C PROCESS NUMERICAL DATA FOLLOWING 'PROB' LITERALS
         Np = nmix
         IF ( nmix.GT.MAXPV ) THEN
           Np = MAXPV
-          ! WRITE (IOOUT,99024) 'rho',Np ! warning
+          WRITE (IOOUT,99024) 'rho',Np ! warning
         ENDIF
         DO i = 1,Np
           V(i) = xyz/mix(i)
@@ -2688,7 +2783,7 @@ C PROCESS NUMERICAL DATA FOLLOWING 'PROB' LITERALS
         Np = nmix
         IF ( nmix.GT.MAXPV ) THEN
           Np = MAXPV
-          ! WRITE (IOOUT,99024) 'v',Np ! warning
+          WRITE (IOOUT,99024) 'v',Np ! warning
         ENDIF
         DO i = 1,Np
           V(i) = mix(i)*xyz
@@ -2710,7 +2805,7 @@ C PROCESS NUMERICAL DATA FOLLOWING 'PROB' LITERALS
         Nsk = nmix
         IF ( nmix.GT.NCOL ) THEN
           Nsk = NCOL
-          ! WRITE (IOOUT,99024) 'u1',Nsk ! warning
+          WRITE (IOOUT,99024) 'u1',Nsk ! warning
         ENDIF
         DO i = 1,Nsk
           U1(i) = mix(i)
@@ -2719,7 +2814,7 @@ C PROCESS NUMERICAL DATA FOLLOWING 'PROB' LITERALS
         Nsk = nmix
         IF ( nmix.GT.NCOL ) THEN
           Nsk = NCOL
-          ! WRITE (IOOUT,99024) 'mach1',Nsk ! warning 
+          WRITE (IOOUT,99024) 'mach1',Nsk ! warning 
         ENDIF
         DO i = 1,Nsk
           Mach1(i) = mix(i)
@@ -2728,7 +2823,7 @@ C PROCESS NUMERICAL DATA FOLLOWING 'PROB' LITERALS
         Nsub = nmix
         IF ( nmix.GT.13 ) THEN
           Nsub = 13
-          ! WRITE (IOOUT,99024) 'subar',Nsub ! warning
+          WRITE (IOOUT,99024) 'subar',Nsub ! warning
         ENDIF
         DO i = 1,Nsub
           Subar(i) = mix(i)
@@ -2737,7 +2832,7 @@ C PROCESS NUMERICAL DATA FOLLOWING 'PROB' LITERALS
         Nsup = nmix
         IF ( nmix.GT.13 ) THEN
           Nsup = 13
-          ! WRITE (IOOUT,99024) 'supar',Nsup ! warning
+          WRITE (IOOUT,99024) 'supar',Nsup ! warning
         ENDIF
         DO i = 1,Nsup
           Supar(i) = mix(i)
@@ -2755,7 +2850,7 @@ C PROCESS NUMERICAL DATA FOLLOWING 'PROB' LITERALS
         Nof = nmix
         IF ( nmix.GT.MAXMIX ) THEN
           Nof = MAXMIX
-          ! WRITE (IOOUT,99024) 'o/f',Nof ! warning
+          WRITE (IOOUT,99024) 'o/f',Nof ! warning
         ENDIF
         DO k = 1,Nof
           Oxf(k) = mix(k)
@@ -2774,7 +2869,7 @@ C PROCESS NUMERICAL DATA FOLLOWING 'PROB' LITERALS
           ENDDO
         ENDIF
       ELSE
-        ! WRITE (IOOUT,99002) cx15 ! warning
+        WRITE (IOOUT,99002) cx15 ! warning
       ENDIF
       IF ( iv.GE.ncin ) GOTO 100
       GOTO 200
@@ -2967,7 +3062,7 @@ C LOCAL VARIABLES
       REAL*8 DABS,DLOG
       SAVE assval,bigb,bratio,dbi,i,j,smalb,tem,v1,v2
 C
-      ! IF ( .NOT.Short ) WRITE (IOOUT,99001) Oxfl ! variable
+      IF ( .NOT.Short ) WRITE (IOOUT,99001) Oxfl ! variable
       Eqrat = 0.
       tem = Oxfl + 1.
       v2 = (Oxfl*Vmin(1)+Vmin(2))/tem
@@ -3003,16 +3098,16 @@ C NOTE THAT "BRATIO" IS "BRATIO" IN SEC 3.2 IN RP-1311.
       Jsol = 0
       Jliq = 0
       IF ( .NOT.Short ) THEN
-        ! WRITE (IOOUT,99002) ! header
-        ! IF ( Vol ) WRITE (IOOUT,99003) ! header
-        ! IF ( .NOT.Vol ) WRITE (IOOUT,99004) ! header
-        ! WRITE (IOOUT,99005) Hpp(2),Hpp(1),Hsub0 ! variable
-        ! WRITE (IOOUT,99006)! header
+        WRITE (IOOUT,99002) ! header
+        IF ( Vol ) WRITE (IOOUT,99003) ! header
+        IF ( .NOT.Vol ) WRITE (IOOUT,99004) ! header
+        WRITE (IOOUT,99005) Hpp(2),Hpp(1),Hsub0 ! variable
+        WRITE (IOOUT,99006)! header
       ENDIF
       DO i = 1,Nlm
         j = Jcm(i)
-        ! IF ( .NOT.Short ) WRITE (IOOUT,99007) Prod(j),B0p(i,2),B0p(i,1), ! variable
-    !  &                           B0(i)
+        IF ( .NOT.Short ) WRITE (IOOUT,99007) Prod(j),B0p(i,2),B0p(i,1), ! variable
+     &                           B0(i)
       ENDDO
       RETURN
 99001 FORMAT (/' O/F = ',F10.6)
@@ -3073,18 +3168,18 @@ C
       EQUIVALENCE (mxx(22),mdvp)
       EQUIVALENCE (mxx(23),mcondf)
       EQUIVALENCE (mxx(24),mpnf)
-      ! WRITE (IOOUT,99001) Case !variable
+      WRITE (IOOUT,99001) Case !variable
       IF ( Moles ) THEN
-        ! WRITE (IOOUT,99002) '   MOLES   ' !header
-        ! IF ( .NOT.Siunit ) WRITE (IOOUT,99003) ! header
-        ! IF ( Siunit ) WRITE (IOOUT,99004) !header
+        WRITE (IOOUT,99002) '   MOLES   ' !header
+        IF ( .NOT.Siunit ) WRITE (IOOUT,99003) ! header
+        IF ( Siunit ) WRITE (IOOUT,99004) !header
       ELSE
-        ! WRITE (IOOUT,99002) 'WT FRACTION' ! header
-        ! IF ( .NOT.Siunit ) WRITE (IOOUT,99005) ! header
-        ! IF ( Siunit ) WRITE (IOOUT,99006) ! header 
+        WRITE (IOOUT,99002) 'WT FRACTION' ! header
+        IF ( .NOT.Siunit ) WRITE (IOOUT,99005) ! header
+        IF ( Siunit ) WRITE (IOOUT,99006) ! header 
       ENDIF
       DO n = 1,Nreac
-        ! WRITE (IOOUT,99007) Fox(n),Rname(n),Pecwt(n),Enth(n)*R,Rtemp(n) ! variables
+        WRITE (IOOUT,99007) Fox(n),Rname(n),Pecwt(n),Enth(n)*R,Rtemp(n) ! variables
       ENDDO
       phi = 0.
       tem = (Vpls(1)+Vmin(1))*Oxfl
@@ -3102,12 +3197,12 @@ C
         ENDIF
         IF ( Siunit ) THEN
           rho = rho*1000.D0
-          ! WRITE (IOOUT,99021) rho ! variable
+          WRITE (IOOUT,99021) rho ! variable
         ELSE
-          ! WRITE (IOOUT,99022) rho ! variable
+          WRITE (IOOUT,99022) rho ! variable
         ENDIF
       ENDIF
-      ! WRITE (IOOUT,99008) Oxfl,pfuel,Eqrat,phi ! variable
+      WRITE (IOOUT,99008) Oxfl,pfuel,Eqrat,phi ! variable
       RETURN
 C***********************************************************************
       ENTRY OUT2
@@ -3219,12 +3314,12 @@ C PRESSURE
           IF ( mt.GT.0 ) Pltout(i+Iplt-ione,mt) = Ttt(i)
         ENDIF
       ENDDO
-      ! WRITE (IOOUT,Fmt) fp,(X(j),j=1,Npt) ! variable
+      WRITE (IOOUT,Fmt) fp,(X(j),j=1,Npt) ! variable
 C TEMPERATURE
       Fmt(4) = '13'
       Fmt(5) = ' '
       Fmt(7) = '2,'
-      ! WRITE (IOOUT,Fmt) 'T, K            ',(Ttt(j),j=1,Npt) !variable
+      WRITE (IOOUT,Fmt) 'T, K            ',(Ttt(j),j=1,Npt) !variable
 C DENSITY
       DO i = 1,Npt
         IF ( Vlm(i).NE.0. ) X(i) = vnum/Vlm(i)
@@ -3240,7 +3335,7 @@ C ENTHALPY
       ENDDO
       Fmt(4) = Fmt(6)
       CALL VARFMT(X)
-      ! WRITE (IOOUT,Fmt) fh,(X(j),j=1,Npt) ! variable
+      WRITE (IOOUT,Fmt) fh,(X(j),j=1,Npt) ! variable
 C INTERNAL ENERGY
       DO i = 1,Npt
         X(i) = (Hsum(i)-Ppp(i)*Vlm(i)/Rr)*R
@@ -3248,7 +3343,7 @@ C INTERNAL ENERGY
      &       Pltout(i+Iplt-ione,mie) = X(i)
       ENDDO
       CALL VARFMT(X)
-      ! WRITE (IOOUT,Fmt) fu,(X(j),j=1,Npt) ! variable
+      WRITE (IOOUT,Fmt) fu,(X(j),j=1,Npt) ! variable
 C GIBBS ENERGY
       DO i = 1,Npt
         X(i) = (Hsum(i)-Ttt(i)*Ssum(i))*R
@@ -3264,29 +3359,29 @@ C GIBBS ENERGY
         ENDIF
       ENDDO
       CALL VARFMT(X)
-      ! WRITE (IOOUT,Fmt) fgi,(X(j),j=1,Npt) ! variable
+      WRITE (IOOUT,Fmt) fgi,(X(j),j=1,Npt) ! variable
 C ENTROPY
       Fmt(4) = '13'
       Fmt(5) = ' '
       Fmt(7) = '4,'
-      ! WRITE (IOOUT,Fmt) fs,(Ssum(j)*R,j=1,Npt) ! variable
-      ! WRITE (IOOUT,99009)! header empty line
+      WRITE (IOOUT,Fmt) fs,(Ssum(j)*R,j=1,Npt) ! variable
+      WRITE (IOOUT,99009)! header empty line
 C MOLECULAR WEIGHT
       Fmt(7) = '3,'
-      ! WRITE (IOOUT,Fmt) 'M, (1/n)        ',(Wm(j),j=1,Npt) ! variable
-      ! IF ( .NOT.Gonly ) WRITE (IOOUT,Fmt) 'MW, MOL WT      ',!variable
-    !  &                                (1.D0/Totn(j),j=1,Npt)
+      WRITE (IOOUT,Fmt) 'M, (1/n)        ',(Wm(j),j=1,Npt) ! variable
+      IF ( .NOT.Gonly ) WRITE (IOOUT,Fmt) 'MW, MOL WT      ',!variable
+     &                                (1.D0/Totn(j),j=1,Npt)
 C (DLV/DLP)T
       Fmt(7) = '5,'
-      ! IF ( Eql ) WRITE (IOOUT,Fmt) '(dLV/dLP)t      ',(Dlvpt(j),j=1,Npt) !variable
+      IF ( Eql ) WRITE (IOOUT,Fmt) '(dLV/dLP)t      ',(Dlvpt(j),j=1,Npt) !variable
 C (DLV/DLT)P
       Fmt(7) = '4,'
-      ! IF ( Eql ) WRITE (IOOUT,Fmt) '(dLV/dLT)p      ',(Dlvtp(j),j=1,Npt) ! variable
+      IF ( Eql ) WRITE (IOOUT,Fmt) '(dLV/dLT)p      ',(Dlvtp(j),j=1,Npt) ! variable
 C HEAT CAPACITY
-      ! WRITE (IOOUT,Fmt) fc,(Cpr(j)*R,j=1,Npt) ! variable
+      WRITE (IOOUT,Fmt) fc,(Cpr(j)*R,j=1,Npt) ! variable
 C GAMMA(S)
       Fmt(7) = '4,'
-      ! WRITE (IOOUT,Fmt) 'GAMMAs          ',(Gammas(j),j=1,Npt)! variable
+      WRITE (IOOUT,Fmt) 'GAMMAs          ',(Gammas(j),j=1,Npt)! variable
 C SONIC VELOCITY
       Fmt(7) = '1,'
       DO i = 1,Npt
@@ -3294,7 +3389,7 @@ C SONIC VELOCITY
         IF ( Nplt.NE.0.AND.i.GT.ione.AND.mson.GT.0 )
      &       Pltout(i+Iplt-ione,mson) = Sonvel(i)
       ENDDO
-      ! WRITE (IOOUT,Fmt) 'SON VEL,M/SEC   ',(Sonvel(j),j=1,Npt) ! variable
+      WRITE (IOOUT,Fmt) 'SON VEL,M/SEC   ',(Sonvel(j),j=1,Npt) ! variable
       RETURN
 C***********************************************************************
       ENTRY OUT3
@@ -3307,7 +3402,7 @@ C MASS OR MOLE FRACTIONS
         mamo = 'MOLE'
       ENDIF
       IF ( Eql ) THEN
-        ! WRITE (IOOUT,99010) mamo ! header
+        WRITE (IOOUT,99010) mamo ! header
         notuse = 0
         DO k = 1,Ngc
           kok = .TRUE.
@@ -3343,7 +3438,7 @@ C MASS OR MOLE FRACTIONS
           ENDDO
           IF ( kin.EQ.1 ) THEN
             IF ( Trace.EQ.0. ) THEN
-              ! WRITE (IOOUT,99011) Prod(k),(X(i),i=1,Npt) ! variable
+              WRITE (IOOUT,99011) Prod(k),(X(i),i=1,Npt) ! variable
             ELSE
               CALL EFMT(Fmt(4),Prod(k),X)
             ENDIF
@@ -3354,21 +3449,21 @@ C MASS OR MOLE FRACTIONS
           ENDIF
         ENDDO
       ENDIF
-      ! WRITE (IOOUT,99012) Tg(4) ! variable
+      WRITE (IOOUT,99012) Tg(4) ! variable
       IF ( .NOT.Short ) THEN
-        ! WRITE (IOOUT,99013) mamo,tra !header
-        ! WRITE (IOOUT,99014) (Omit(i),i=1,notuse) !variables
+        WRITE (IOOUT,99013) mamo,tra !header
+        WRITE (IOOUT,99014) (Omit(i),i=1,notuse) !variables
       ENDIF
-      ! IF ( .NOT.Moles ) WRITE (IOOUT,99015)! warning
+      IF ( .NOT.Moles ) WRITE (IOOUT,99015)! warning
       GOTO 200
 C***********************************************************************
       ENTRY OUT4
-      ! WRITE (IOOUT,99009) !header empty line
-      ! WRITE (IOOUT,99016) !header
+      WRITE (IOOUT,99009) !header empty line
+      WRITE (IOOUT,99016) !header
       IF ( Siunit ) THEN
-        ! WRITE (IOOUT,99018) ! header
+        WRITE (IOOUT,99018) ! header
       ELSE
-        ! WRITE (IOOUT,99017) ! header
+        WRITE (IOOUT,99017) ! header
       ENDIF
 C TRANSPORT PROPERTIES
       Fmt(4) = Fmt(6)
@@ -3384,26 +3479,26 @@ C TRANSPORT PROPERTIES
         ENDDO
       ENDIF
       CALL VARFMT(Vis)
-      ! WRITE (IOOUT,Fmt) 'VISC,MILLIPOISE',(Vis(j),j=1,Npt) ! variable
+      WRITE (IOOUT,Fmt) 'VISC,MILLIPOISE',(Vis(j),j=1,Npt) ! variable
       Fmt(4) = '13'
       Fmt(5) = ' '
       Fmt(7) = '4,'
       IF ( Eql ) THEN
-        ! WRITE (IOOUT,99019) !header
+        WRITE (IOOUT,99019) !header
 C SPECIFIC HEAT
-        ! WRITE (IOOUT,Fmt) fc,(Cpeql(j),j=1,Npt)! variables
+        WRITE (IOOUT,Fmt) fc,(Cpeql(j),j=1,Npt)! variables
 C CONDUCTIVITY
-        ! WRITE (IOOUT,Fmt) 'CONDUCTIVITY    ',(Coneql(j),j=1,Npt)! variable
+        WRITE (IOOUT,Fmt) 'CONDUCTIVITY    ',(Coneql(j),j=1,Npt)! variable
 C PRANDTL NUMBER
-        ! WRITE (IOOUT,Fmt) 'PRANDTL NUMBER  ',(Preql(j),j=1,Npt) ! variable
+        WRITE (IOOUT,Fmt) 'PRANDTL NUMBER  ',(Preql(j),j=1,Npt) ! variable
       ENDIF
-      ! WRITE (IOOUT,99020) ! header
+      WRITE (IOOUT,99020) ! header
 C SPECIFIC HEAT
-      ! WRITE (IOOUT,Fmt) fc,(Cpfro(j),j=1,Npt) !variable
+      WRITE (IOOUT,Fmt) fc,(Cpfro(j),j=1,Npt) !variable
 C CONDUCTIVITY
-      ! WRITE (IOOUT,Fmt) 'CONDUCTIVITY    ',(Confro(j),j=1,Npt) ! variable
+      WRITE (IOOUT,Fmt) 'CONDUCTIVITY    ',(Confro(j),j=1,Npt) ! variable
 C PRANDTL NUMBER
-      ! WRITE (IOOUT,Fmt) 'PRANDTL NUMBER  ',(Prfro(j),j=1,Npt) ! variable
+      WRITE (IOOUT,Fmt) 'PRANDTL NUMBER  ',(Prfro(j),j=1,Npt) ! variable
  200  RETURN
 99001 FORMAT (' CASE = ',a15)
 99002 FORMAT (/13X,'REACTANT',20x,a11,'      ENERGY',6x,'TEMP')
@@ -3501,12 +3596,12 @@ C IF FUEL, KR = 2
                   dift = DABS(Tt-t1)
                   IF ( dift.GT.01d0 ) THEN
                     IF ( dift.GT.10.d0 ) THEN
-                      ! WRITE (IOOUT,99001) Rname(n),t1,Tt ! variables
+                      WRITE (IOOUT,99001) Rname(n),t1,Tt ! variables
                       Nlm = 0
                       hok = .false.
                       GOTO 200
                     ELSE
-                      ! WRITE (IOOUT,99002) Rname(n),t1,Tt ! warning
+                      WRITE (IOOUT,99002) Rname(n),t1,Tt ! warning
                       Tt = t1
                       Rtemp(n) = t1
                     ENDIF
@@ -3530,7 +3625,7 @@ C IF FUEL, KR = 2
               ENDDO
  5            IF ( Tt.EQ.0. ) THEN
                 IF ( .NOT.Hp ) GOTO 50
-                ! WRITE (IOOUT,99004) n ! error
+                WRITE (IOOUT,99004) n ! error
                 Nlm = 0
                 GOTO 200
               ENDIF
@@ -3550,7 +3645,7 @@ C IF FUEL, KR = 2
             ENDIF
  20       CONTINUE
           if (.not.hok) then
-            ! WRITE (IOOUT,99010) Tt,Rname(n),t1save,t2save ! error
+            WRITE (IOOUT,99010) Tt,Rname(n),t1save,t2save ! error
             Energy(n) = ' '
             Nlm = 0
             goto 200
@@ -3593,7 +3688,7 @@ C TEMPORARILY STORE ATOMIC VALENCE IN X.
               GOTO 100
             ENDIF
           ENDDO
-          ! WRITE (IOOUT,99005) Ratom(n,jj) ! error
+          WRITE (IOOUT,99005) Ratom(n,jj) ! error
           Nlm = 0
           GOTO 200
  100    CONTINUE
@@ -3602,9 +3697,9 @@ C TEMPORARILY STORE ATOMIC VALENCE IN X.
           IF ( .NOT.Moles.AND..NOT.wdone(kr) ) THEN
             wdone(kr) = .TRUE.
             Pecwt(n) = 100.
-            ! WRITE (IOOUT,99006) n ! warning
+            WRITE (IOOUT,99006) n ! warning
           ELSE
-            ! WRITE (IOOUT,99007) n ! error
+            WRITE (IOOUT,99007) n ! error
             Nlm = 0
             GOTO 200
           ENDIF
@@ -3671,13 +3766,13 @@ C CALCULATE V+(KR), AND V-(KR)
         ENDDO
         IF ( .NOT.Short ) THEN
           IF ( Moles ) THEN
-            ! WRITE (IOOUT,99008) ' MOLES ' ! header
+            WRITE (IOOUT,99008) ' MOLES ' ! header
           ELSE
-            ! WRITE (IOOUT,99008) 'WT.FRAC' ! header
+            WRITE (IOOUT,99008) 'WT.FRAC' ! header
           ENDIF
           DO n = 1,Nreac
-            ! WRITE (IOOUT,99009) Fox(n),Rname(n),Pecwt(n),Enth(n), ! variables
-    !  &           Rtemp(n),Dens(n),(Ratom(n,i),Rnum(n,i),i=1,Nfla(n)) 
+            WRITE (IOOUT,99009) Fox(n),Rname(n),Pecwt(n),Enth(n), ! variables
+     &           Rtemp(n),Dens(n),(Ratom(n,i),Rnum(n,i),i=1,Nfla(n)) 
           ENDDO
         ENDIF
       ENDIF
@@ -3728,20 +3823,20 @@ C
       EQUIVALENCE (mxx(7),misp)
       DATA exit/11*'EXIT'/
       IF ( .NOT.Eql ) THEN
-        ! WRITE (IOOUT,99004) ! header
-        ! IF ( Nfz.GT.1 ) WRITE (IOOUT,99005) Nfz ! header
+        WRITE (IOOUT,99004) ! header
+        IF ( Nfz.GT.1 ) WRITE (IOOUT,99005) Nfz ! header
       ELSE
-        ! WRITE (IOOUT,99001) ! header
-        ! IF ( Iopt.NE.0 ) WRITE (IOOUT,99002) ! header
-        ! IF ( Iopt.EQ.0 ) WRITE (IOOUT,99003) ! header
+        WRITE (IOOUT,99001) ! header
+        IF ( Iopt.NE.0 ) WRITE (IOOUT,99002) ! header
+        IF ( Iopt.EQ.0 ) WRITE (IOOUT,99003) ! header
       ENDIF
-      ! IF ( Ttt(1).EQ.T(It) ) WRITE (IOOUT,99006) ! header
+      IF ( Ttt(1).EQ.T(It) ) WRITE (IOOUT,99006) ! header
       tem = Ppp(1)*14.696006D0/1.01325D0
-      ! WRITE (IOOUT,99009) 'Pin',tem ! variable
+      WRITE (IOOUT,99009) 'Pin',tem ! variable
       i23 = 2
       IF ( Iopt.GT.0 ) THEN
-        ! IF ( Iopt.EQ.1 ) WRITE (IOOUT,99007) Subar(1),App(2) !variable
-        ! IF ( Iopt.EQ.2 ) WRITE (IOOUT,99008) Ma,App(2) ! variable
+        IF ( Iopt.EQ.1 ) WRITE (IOOUT,99007) Subar(1),App(2) !variable
+        IF ( Iopt.EQ.2 ) WRITE (IOOUT,99008) Ma,App(2) ! variable
         i23 = 3
       ENDIF
       CALL OUT1
@@ -3758,18 +3853,18 @@ C
       ENDIF
 C PRESSURE RATIOS
       IF ( Iopt.EQ.0 ) THEN
-        ! WRITE (IOOUT,99011) (exit(i),i=1,nex) !header
+        WRITE (IOOUT,99011) (exit(i),i=1,nex) !header
         CALL VARFMT(App)
-        ! WRITE (IOOUT,Fmt) 'Pinf/P         ',(App(j),j=1,Npt) !variable
+        WRITE (IOOUT,Fmt) 'Pinf/P         ',(App(j),j=1,Npt) !variable
       ELSE
         nex = nex - 1
-        ! WRITE (IOOUT,99010) (exit(i),i=1,nex) ! header
+        WRITE (IOOUT,99010) (exit(i),i=1,nex) ! header
         X(1) = 1.D0
         DO i = 2,Npt
           X(i) = Ppp(1)/Ppp(i)
         ENDDO
         CALL VARFMT(X)
-        ! WRITE (IOOUT,Fmt) 'Pinj/P         ',(X(i),i=1,Npt) ! variable
+        WRITE (IOOUT,Fmt) 'Pinj/P         ',(X(i),i=1,Npt) ! variable
       ENDIF
       CALL OUT2
       DO i = 1,8
@@ -3827,33 +3922,33 @@ C MACH NUMBER
       Vmoc(1) = 0.
       IF ( Gammas(i23).EQ.0. ) Vmoc(i23) = 0.
       Fmt(7) = '3,'
-      ! WRITE (IOOUT,Fmt) 'MACH NUMBER    ',(Vmoc(j),j=1,Npt) ! variable
+      WRITE (IOOUT,Fmt) 'MACH NUMBER    ',(Vmoc(j),j=1,Npt) ! variable
       IF ( Trnspt ) CALL OUT4
-      ! WRITE (IOOUT,99013) ! header
+      WRITE (IOOUT,99013) ! header
 C AREA RATIO
       Fmt(4) = '9x,'
       Fmt(i46) = '9x,'
       CALL VARFMT(Aeat)
       Fmt(5) = ' '
       Fmt(i57) = ' '
-      ! WRITE (IOOUT,Fmt) 'Ae/At          ',(Aeat(j),j=2,Npt) ! variable
+      WRITE (IOOUT,Fmt) 'Ae/At          ',(Aeat(j),j=2,Npt) ! variable
 C C*
       Fmt(i57) = '13'
       Fmt(i68) = Fmt(i68+2)
       Fmt(i79) = '1,'
-      ! WRITE (IOOUT,Fmt) fr,(Cstr,j=2,Npt) ! variable
+      WRITE (IOOUT,Fmt) fr,(Cstr,j=2,Npt) ! variable
 C CF - THRUST COEFICIENT
       Fmt(i79) = '4,'
       DO i = 2,Npt
         X(i) = gc*Spim(i)/Cstr
       ENDDO
-      ! WRITE (IOOUT,Fmt) 'CF             ',(X(j),j=2,Npt) ! variable
+      WRITE (IOOUT,Fmt) 'CF             ',(X(j),j=2,Npt) ! variable
 C VACUUM IMPULSE
       Fmt(i57) = '13'
       Fmt(i79) = '1,'
-      ! WRITE (IOOUT,Fmt) fiv,(vaci(j),j=2,Npt) ! variable
+      WRITE (IOOUT,Fmt) fiv,(vaci(j),j=2,Npt) ! variable
 C SPECIFIC IMPULSE
-      ! WRITE (IOOUT,Fmt) fi,(Spim(j),j=2,Npt) ! variable
+      WRITE (IOOUT,Fmt) fi,(Spim(j),j=2,Npt) ! variable
       IF ( Nplt.GT.0 ) THEN
         Spim(1) = 0
         Aeat(1) = 0
@@ -3871,7 +3966,7 @@ C SPECIFIC IMPULSE
           IF ( misp.GT.0 ) Pltout(i+Iplt-ione,misp) = Spim(i)
         ENDDO
       ENDIF
-      ! WRITE (IOOUT,99012) ! empty line
+      WRITE (IOOUT,99012) ! empty line
       Fmt(4) = ' '
       Fmt(5) = '13'
       Fmt(7) = '5,'
@@ -3881,9 +3976,9 @@ C SPECIFIC IMPULSE
       ENDIF
       IF ( .NOT.Eql ) THEN
         IF ( Massf ) THEN
-          ! WRITE (IOOUT,99014) 'MASS' ! header
+          WRITE (IOOUT,99014) 'MASS' ! header
         ELSE
-          ! WRITE (IOOUT,99014) 'MOLE' ! header
+          WRITE (IOOUT,99014) 'MOLE' ! header
           ww = 1.D0/Totn(Nfz)
         ENDIF
 C MOLE (OR MASS) FRACTIONS - FROZEN
@@ -3899,7 +3994,7 @@ C MOLE (OR MASS) FRACTIONS - FROZEN
           ENDIF
           IF ( line.EQ.3.OR.k.EQ.Ngc ) THEN
             IF ( line.EQ.0 ) GOTO 200
-            ! WRITE (IOOUT,99015) (z(ln),X(ln),ln=1,line) ! variables
+            WRITE (IOOUT,99015) (z(ln),X(ln),ln=1,line) ! variables
             line = 0
           ENDIF
         ENDDO
@@ -3965,7 +4060,7 @@ C
         ELSEIF ( Ma.NE.0. ) THEN
           Iopt = 2
         ELSE
-          ! WRITE (IOOUT,99001) ! error
+          WRITE (IOOUT,99001) ! error
           Tt = 0.
           GOTO 1400
         ENDIF
@@ -3983,11 +4078,11 @@ C
         Subar(1) = Acat
       ELSEIF ( .NOT.Eql.AND.Nfz.GT.1.AND.Nsub.GT.0 ) THEN
         Nsub = 0
-        ! WRITE (IOOUT,99023) ! warning
+        WRITE (IOOUT,99023) ! warning
       ENDIF
       nn = nn + Nsub + Nsup
       IF ( Nfz.GT.2.AND.nn.GT.NCOL-2 ) THEN
-        ! WRITE (IOOUT,99002) NCOL - 2 ! warning
+        WRITE (IOOUT,99002) NCOL - 2 ! warning
         Nfz = 1
         Froz = .FALSE.
       ENDIF
@@ -4056,11 +4151,11 @@ C INITIAL ESTIMATE FOR PC (AND ACAT IF NOT ASSIGNED)
             IF ( Acat.GE.1. ) THEN
               pratsv = prat
               IF ( Debugf ) THEN
-                ! IF ( i.LE.1 ) WRITE (IOOUT,99004) ! header
-                ! WRITE (IOOUT,99005) i,ppa,Acat ! variables
+                IF ( i.LE.1 ) WRITE (IOOUT,99004) ! header
+                WRITE (IOOUT,99005) i,ppa,Acat ! variables
               ENDIF
             ELSE
-              ! WRITE (IOOUT,99003) Ma ! error
+              WRITE (IOOUT,99003) Ma ! error
               Tt = 0.
               GOTO 1400
             ENDIF
@@ -4106,7 +4201,7 @@ C INITIAL ESTIMATE FOR PC (AND ACAT IF NOT ASSIGNED)
         Ttt(2) = Ttt(4)
         Vlm(2) = Vlm(4)
         Wm(2) = Wm(4)
-        ! IF ( .NOT.Short ) WRITE (IOOUT,99009) ! header
+        IF ( .NOT.Short ) WRITE (IOOUT,99009) ! header
         GOTO 600
 C INITIALIZE FOR THROAT
  400    IF ( ipp.GT.nipp ) THEN
@@ -4117,11 +4212,11 @@ C THROAT
             Vv = Vlm(nptth)
             pvg = Pp*Vv*Gammas(nptth)
             IF ( pvg.EQ.0. ) THEN
-              ! WRITE (IOOUT,99010) ! warning
+              WRITE (IOOUT,99010) ! warning
               GOTO 550
             ELSE
               msq = usq/pvg
-              ! IF ( Debug(1).OR.Debug(2) ) WRITE (IOOUT,99011) usq,pvg ! variable
+              IF ( Debug(1).OR.Debug(2) ) WRITE (IOOUT,99011) usq,pvg ! variable
               dh = DABS(msq-1.D0)
               IF ( dh.LE.0.4D-4 ) GOTO 550
               IF ( itrot.GT.0 ) THEN
@@ -4132,21 +4227,21 @@ C THROAT
                 ELSEIF ( tmelt.EQ.0. ) THEN
                   Pp = Pp*(1.D0+msq*Gammas(nptth))/(Gammas(nptth)+1.D0)
                 ELSE
-                  ! WRITE (IOOUT,99012) ! warning
+                  WRITE (IOOUT,99012) ! warning
                   dlt = DLOG(tmelt/Tt)
                   dd = dlt*Cpr(nptth)/(Enn*Dlvtp(nptth))
                   Pp = Pp*EXP(dd)
                   App(nptth) = P(Ip)/Pp
                   IF ( Fac ) App(nptth) = pinf/Pp
-                  ! IF ( Eql.AND..NOT.Short ) WRITE (IOOUT,99013) ! variable
-    !  &                            App(nptth)
+                  IF ( Eql.AND..NOT.Short ) WRITE (IOOUT,99013) ! variable
+     &                            App(nptth)
                   thi = .TRUE.
                   GOTO 250
                 ENDIF
                 GOTO 500
               ELSEIF ( itrot.LT.0 ) THEN
                 IF ( itrot.LT.-19 ) THEN
-                  ! WRITE (IOOUT,99010) ! warning
+                  WRITE (IOOUT,99010) ! warning
                   GOTO 550
                 ELSE
                   IF ( Npr.NE.npr1 ) GOTO 550
@@ -4154,12 +4249,12 @@ C THROAT
                   GOTO 500
                 ENDIF
               ELSEIF ( Npr.EQ.npr1 ) THEN
-                ! WRITE (IOOUT,99010) ! warning
+                WRITE (IOOUT,99010) ! warning
                 GOTO 550
               ELSE
                 dp = DABS(Pp-p1)/20.
                 Pp = DMAX1(Pp,p1)
-                ! WRITE (IOOUT,99012) ! warning
+                WRITE (IOOUT,99012) ! warning
                 Pp = Pp - dp
                 GOTO 500
               ENDIF
@@ -4181,14 +4276,14 @@ C THROAT
         thi = .FALSE.
         App(nptth) = ((Gammas(i12)+1.)/2.)
      &               **(Gammas(i12)/(Gammas(i12)-1.))
-        ! IF ( Eql.AND..NOT.Short ) WRITE (IOOUT,99013) App(nptth) ! variable
+        IF ( Eql.AND..NOT.Short ) WRITE (IOOUT,99013) App(nptth) ! variable
         Pp = pinf/App(nptth)
         Isv = -i12
         GOTO 1200
  500    npr1 = Npr
         App(nptth) = P(Ip)/Pp
         IF ( Fac ) App(nptth) = pinf/Pp
-        ! IF ( Eql.AND..NOT.Short ) WRITE (IOOUT,99013) App(nptth) ! variable
+        IF ( Eql.AND..NOT.Short ) WRITE (IOOUT,99013) App(nptth) ! variable
         itrot = itrot - 1
         GOTO 250
  550    Awt = Enn*Tt/(Pp*usq**.5)
@@ -4222,12 +4317,12 @@ C PCP ESTIMATES FOR AREA RATIOS
           IF ( (.NOT.Fac.OR.done).AND.Nsub.LE.i01 ) aratio = Supar(Isup)
           IF ( .NOT.Eql.AND.Nfz.GE.3 ) THEN
             IF ( aratio.LE.Aeat(Nfz) ) THEN
-              ! WRITE (IOOUT,99014) Nfz ! warning
+              WRITE (IOOUT,99014) Nfz ! warning
               GOTO 1050
             ENDIF
           ENDIF
           IF (aratio .LT. 1.d0 ) THEN
-            ! WRITE (IOOUT,99025)  ! error
+            WRITE (IOOUT,99025)  ! error
             GOTO 1050
           ENDIF
           eln = DLOG(aratio)
@@ -4248,14 +4343,14 @@ C PCP ESTIMATES FOR AREA RATIOS
 C TEST FOR CONVERGENCE ON AREA RATIO.
         ELSEIF ( Gammas(Npt).GT.0. ) THEN
           check = .00004
-          ! IF ( Debug(Npt) ) WRITE (IOOUT,99016) itnum,aratio,Aeat(Npt), ! variable
-    !  &                             App(Npt),dlnp
+          IF ( Debug(Npt) ) WRITE (IOOUT,99016) itnum,aratio,Aeat(Npt), ! variable
+     &                             App(Npt),dlnp
           IF ( DABS(Aeat(Npt)-aratio)/aratio.LE.check ) GOTO 900
           IF ( ABS(dlnp).LT..00004 ) GOTO 900
           aeatl = DLOG(Aeat(Npt))
           itnum = itnum + 1
           IF ( itnum.GT.10 ) THEN
-            ! WRITE (IOOUT,99017) aratio ! warning
+            WRITE (IOOUT,99017) aratio ! warning
             GOTO 900
           ELSE
 C IMPROVED PCP ESTIMATES.
@@ -4264,7 +4359,7 @@ C IMPROVED PCP ESTIMATES.
             GOTO 850
           ENDIF
         ELSE
-          ! WRITE (IOOUT,99015) ! warning
+          WRITE (IOOUT,99015) ! warning
           Npt = Npt - 1
           IF ( Nsub.LE.0 ) isup1 = 100
           IF ( Nsub.LT.0. ) Nsup = Isup - 1
@@ -4297,9 +4392,9 @@ C PRESSURE AND CONTRACTION RATIO. IMPROVED ESTIMATE FOR PC
               test = (pinj-pinjas)/pinjas
               pcpa = pinf*pa
               IF ( Debugf ) THEN
-                ! WRITE (IOOUT,99006) ! header
-                ! WRITE (IOOUT,99007) niter,test,pinjas,pinj,pcpa,ppa, ! variable
-    !  &                          acatsv,Acat
+                WRITE (IOOUT,99006) ! header
+                WRITE (IOOUT,99007) niter,test,pinjas,pinj,pcpa,ppa, ! variable
+     &                          acatsv,Acat
               ENDIF
               IF ( ABS(test).LT.0.00002 ) GOTO 350
               prat = pinjas/pinj
@@ -4321,9 +4416,9 @@ C AND ACAT
               test = (pinj-pinjas)/pinjas
               pcpa = pinf*pa
               IF ( Debugf ) THEN
-                ! WRITE (IOOUT,99006) ! header
-                ! WRITE (IOOUT,99007) niter,test,pinjas,pinj,pcpa,ppa, ! variable
-    !  &                          acatsv,Acat
+                WRITE (IOOUT,99006) ! header
+                WRITE (IOOUT,99007) niter,test,pinjas,pinj,pcpa,ppa, ! variable
+     &                          acatsv,Acat
               ENDIF
               IF ( ABS(test).LT.0.00002 ) GOTO 350
               pjrat = pinj/pinjas
@@ -4338,7 +4433,7 @@ C AND ACAT
                 pratsv = prat
                 pjrat = 1.
                 prat = (b1+c1*Acat)/(1.+a1l*Acat)
-                ! IF ( Debugf ) WRITE (IOOUT,99008) pcpa,Acat,pjrat,pracat ! variable
+                IF ( Debugf ) WRITE (IOOUT,99008) pcpa,Acat,pjrat,pracat ! variable
               ENDDO
               GOTO 300
             ENDIF
@@ -4383,7 +4478,7 @@ C TEST FOR OUTPUT -- SCHEDULES COMPLETE OR NPT=NCOL
         iplte = MAX(iplte,Iplt)
         dlnp = 1.
         IF ( Tt.EQ.0. ) Area = .FALSE.
-        ! IF ( .NOT.Eql.AND.Tt.EQ.0. ) WRITE (IOOUT,99018) ! warning
+        IF ( .NOT.Eql.AND.Tt.EQ.0. ) WRITE (IOOUT,99018) ! warning
         IF ( Isv.EQ.0 ) THEN
 C PCP, SUBAR, AND SUPAR SCHEDULES COMPLETED
           IF ( Nsub.LT.0 ) Nsub = -Nsub
@@ -4401,17 +4496,17 @@ C SET UP FOR FROZEN.
           IF ( Nfz.EQ.1 ) GOTO 450
           IF ( Nsub.GT.0 ) THEN
             Nsub = -Nsub
-            ! WRITE (IOOUT,99023) ! warning
+            WRITE (IOOUT,99023) ! warning
           ENDIF
           IF ( App(Nfz).LT.App(nptth) ) THEN
-            ! WRITE (IOOUT,99024) ! warning
+            WRITE (IOOUT,99024) ! warning
           ELSE
             IF ( Nfz.LT.Npp ) GOTO 1200
             GOTO 700
           ENDIF
           GOTO 1300
         ELSE
-          ! IF ( Eql ) WRITE (IOOUT,99019) ! spaces
+          IF ( Eql ) WRITE (IOOUT,99019) ! spaces
           Npt = nptth
         ENDIF
 C SET INDICES AND ESTIMATES FOR NEXT POINT.
@@ -4431,7 +4526,7 @@ C BOTH SOLID AND LIQUID WERE INCLUDED.  JULY 27, 1990.
             App(Npt) = Pcp(ipp-nptth)
             IF ( Fac ) App(Npt) = App(Npt)*pinf/Ppp(1)
             IF ( .NOT.Eql.AND.App(Npt).LT.App(Nfz) ) THEN
-              ! WRITE (IOOUT,99020) Nfz ! warning
+              WRITE (IOOUT,99020) Nfz ! warning
               GOTO 1250
             ENDIF
           ENDIF
@@ -4440,12 +4535,12 @@ C BOTH SOLID AND LIQUID WERE INCLUDED.  JULY 27, 1990.
             IF ( Area ) THEN
               IF ( isub.LE.Nsub.AND.isub.GT.i01.AND.aratio.GE.Aeat(2) )
      &             THEN
-                ! WRITE (IOOUT,99021) aratio,Aeat(2) ! warning
+                WRITE (IOOUT,99021) aratio,Aeat(2) ! warning
                 Npt = Npt - 1
                 GOTO 1000
               ENDIF
             ELSEIF ( Npt.GT.nptth.AND.Pcp(ipp-3).LT.Ppp(1)/Ppp(2) ) THEN
-              ! WRITE (IOOUT,99022) Pcp(ipp-3),Ppp(1)/Ppp(2) ! warning
+              WRITE (IOOUT,99022) Pcp(ipp-3),Ppp(1)/Ppp(2) ! warning
               Npt = Npt - 1
               GOTO 650
             ENDIF
@@ -4458,7 +4553,7 @@ C 1) CHAMBER PRESSURES(IP = NP)
 C 2) CHAMBER TEMPERATURES(IT = NT)
 C 3) O/F VALUES(IOF = NOF)
         IF ( Ip.EQ.Np.AND.It.EQ.Nt.AND.iof.EQ.Nof ) GOTO 1400
-        ! WRITE (IOOUT,99019) ! empty space
+        WRITE (IOOUT,99019) ! empty space
         CALL SETEN
         Tt = Ttt(i12)
       ENDDO
@@ -4641,7 +4736,7 @@ C FINISHED READING THERMO DATA FROM I/O UNIT IOTHM.
       Ngp1 = Ng + 1
       IF ( Ngc.LT.Nonly ) THEN
         DO k = Ngc + 1,Nonly
-          ! WRITE (IOOUT,99001) Prod(k) ! warning
+          WRITE (IOOUT,99001) Prod(k) ! warning
         ENDDO
       ENDIF
 C FIND MISSING ELEMENTS (IF ANY) FOR COMPONENTS
@@ -4675,21 +4770,21 @@ C ARE ALL ELEMENTS IN PRODUCT SPECIES?
           IF ( A(i,j).NE.0. ) GOTO 300
           ii = i
         ENDDO
-        ! WRITE (IOOUT,99002) Elmt(ii) ! error
+        WRITE (IOOUT,99002) Elmt(ii) ! error
         Ngc = 0
         GOTO 600
  300  CONTINUE
 C WRITE POSSIBLE PRODUCT LIST
       IF ( .NOT.Short ) THEN
-        ! WRITE (IOOUT,99003) Thdate ! warning
+        WRITE (IOOUT,99003) Thdate ! warning
         DO i = 1,Ngc,3
           i5 = i + 2
           IF ( Ngc.LT.i5 ) i5 = Ngc
-          ! WRITE (IOOUT,99004) (date(j),Prod(j),j=i,i5) ! variable
+          WRITE (IOOUT,99004) (date(j),Prod(j),j=i,i5) ! variable
         ENDDO
       ENDIF
       GOTO 600
-!  400  WRITE (IOOUT,99005) !error
+ 400  WRITE (IOOUT,99005) !error
       Ngc = 0
       GOTO 600
 C SEARCH FOR TRANSPORT PROPERTIES FOR THIS CHEMICAL SYSTEM
@@ -4699,7 +4794,7 @@ C SEARCH FOR TRANSPORT PROPERTIES FOR THIS CHEMICAL SYSTEM
       Ntape = 0
       npure = 0
       lineb = 1
-      ! IF ( .NOT.Short ) WRITE (IOOUT,99006) ! warning
+      IF ( .NOT.Short ) WRITE (IOOUT,99006) ! warning
       READ (IOTRN) nrec
       DO ir = 1,nrec
         READ (IOTRN) spece,trdata
@@ -4732,18 +4827,18 @@ C WRITE NAMES FOR PURE SPECIES.
  500    WRITE (IOSCH) jj,trdata
         Ntape = Ntape + 1
  550    IF ( npure.NE.0.AND.(npure.GE.6.OR.ir.GE.nrec) ) THEN
-          ! IF ( .NOT.Short ) WRITE (IOOUT,99007) (pure(jk),jk=1,npure) ! variable
+          IF ( .NOT.Short ) WRITE (IOOUT,99007) (pure(jk),jk=1,npure) ! variable
           npure = 0
         ENDIF
       ENDDO
       lineb = lineb - 1
       IF ( .NOT.Short ) THEN
-        ! WRITE (IOOUT,99008) ! header
+        WRITE (IOOUT,99008) ! header
         DO j = 1,lineb
-          ! WRITE (IOOUT,99009) (bin(i,j),i=1,2) ! variable
+          WRITE (IOOUT,99009) (bin(i,j),i=1,2) ! variable
         ENDDO
       ENDIF
-      ! WRITE (IOOUT,99010) ! empty line
+      WRITE (IOOUT,99010) ! empty line
  600  RETURN
 99001 FORMAT (/' WARNING!!  ',A15,' NOT A PRODUCT IN thermo.lib FILE ',
      &        '(SEARCH)')
@@ -4863,8 +4958,8 @@ C
       Cpmix = 0.
       srefl = .FALSE.
       IF ( .NOT.Short ) THEN
-        ! WRITE (IOOUT,99001) ! header
-        ! WRITE (IOOUT,99002) Incdeq,Refleq,Incdfz,Reflfz ! variable
+        WRITE (IOOUT,99001) ! header
+        WRITE (IOOUT,99002) Incdeq,Refleq,Incdfz,Reflfz ! variable
       ENDIF
       IF ( Refleq.OR.Reflfz ) srefl = .TRUE.
       seql = Incdeq
@@ -4875,12 +4970,12 @@ C
         IF ( Mach1(i).EQ.0.0.AND.U1(i).EQ.0.0 ) GOTO 100
       ENDDO
  100  IF ( Nsk.GT.NCOL ) THEN
-        ! WRITE (IOOUT,99003) NCOL ! warning
+        WRITE (IOOUT,99003) NCOL ! warning
         Nsk = NCOL
       ENDIF
       IF ( .NOT.Short ) THEN
-        ! WRITE (IOOUT,99004) (U1(i),i=1,Nsk) ! variable
-        ! WRITE (IOOUT,99005) (Mach1(i),i=1,Nsk) ! variable
+        WRITE (IOOUT,99004) (U1(i),i=1,Nsk) ! variable
+        WRITE (IOOUT,99005) (Mach1(i),i=1,Nsk) ! variable
       ENDIF
       iof = 0
  200  iof = iof + 1
@@ -4915,7 +5010,7 @@ C FROZEN
           CALL HCALC
           Hsum(Npt) = Hsub0
         ELSE
-          ! WRITE (IOOUT,99016) Tt,Npt ! error
+          WRITE (IOOUT,99016) Tt,Npt ! error
           GOTO 1000
         ENDIF
  350    IF ( Cpmix.NE.0. ) Gamma1 = Cpmix/(Cpmix-1./Wmix)
@@ -4929,21 +5024,21 @@ C FROZEN
       ENDDO
       Npt = Nsk
 C OUTPUT--1ST CONDITION
-      ! WRITE (IOOUT,99006) ! header
+      WRITE (IOOUT,99006) ! header
       IF ( .NOT.Incdeq ) THEN
-        ! WRITE (IOOUT,99008) ! header
+        WRITE (IOOUT,99008) ! header
       ELSE
-        ! WRITE (IOOUT,99007) ! header
+        WRITE (IOOUT,99007) ! header
       ENDIF
       Eql = .FALSE.
       CALL OUT1
-      ! WRITE (IOOUT,99009) ! header
+      WRITE (IOOUT,99009) ! header
       Fmt(4) = '13'
       Fmt(5) = ' '
       Fmt(7) = '4,'
-      ! WRITE (IOOUT,Fmt) 'MACH NUMBER1   ',(Mach1(j),j=1,Npt) ! variable
+      WRITE (IOOUT,Fmt) 'MACH NUMBER1   ',(Mach1(j),j=1,Npt) ! variable
       Fmt(7) = '2,'
-      ! WRITE (IOOUT,Fmt) 'U1, M/SEC      ',(U1(j),j=1,Npt) ! variable
+      WRITE (IOOUT,Fmt) 'U1, M/SEC      ',(U1(j),j=1,Npt) ! variable
       CALL OUT2
 C BEGIN CALCULATIONS FOR 2ND CONDITION
       IF ( Incdeq ) Eql = .TRUE.
@@ -4983,8 +5078,8 @@ C 2ND CONDITION WAS MADE AND TESTED BY S. GORDON 7/10/89.
       t21 = DMIN1(t21,ttmax)
       t21l = DLOG(t21)
       itr = 1
-!  500  IF ( Shkdbg ) WRITE (IOOUT,99010) itr,it2,it1,p21,it2,it1,t21, ! variable
-    !  &     rho52 ! variable
+ 500  IF ( Shkdbg ) WRITE (IOOUT,99010) itr,it2,it1,p21,it2,it1,t21, ! variable
+     &     rho52 ! variable
       Tt = t21*t1
       Pp = p21*p1
       IF ( .NOT.Eql ) THEN
@@ -5027,10 +5122,10 @@ C FROZEN
       X(1) = (G(1,3)*G(2,2)-G(2,3)*G(1,2))/X(3)
       X(2) = (G(1,1)*G(2,3)-G(2,1)*G(1,3))/X(3)
       IF ( Shkdbg ) THEN
-        ! WRITE (IOOUT,99011) G(1,1),G(1,2),G(1,3) ! variable
-        ! WRITE (IOOUT,99011) G(2,1),G(2,2),G(2,3) ! variable
-        ! WRITE (IOOUT,99012) X(1),X(2) ! variable
-        ! WRITE (IOOUT,99013) Hsum(Npt),hs,uu,uu*rho12 ! variable
+        WRITE (IOOUT,99011) G(1,1),G(1,2),G(1,3) ! variable
+        WRITE (IOOUT,99011) G(2,1),G(2,2),G(2,3) ! variable
+        WRITE (IOOUT,99012) X(1),X(2) ! variable
+        WRITE (IOOUT,99013) Hsum(Npt),hs,uu,uu*rho12 ! variable
       ENDIF
       ax = DABS(X(1))
       axx = DABS(X(2))
@@ -5049,11 +5144,11 @@ C FROZEN
         t21l = t21l + X(2)
         p21 = DEXP(p21l)
         t21 = DEXP(t21l)
-        ! IF ( Shkdbg ) WRITE (IOOUT,99014) cormax,X(1),X(2) ! variable
+        IF ( Shkdbg ) WRITE (IOOUT,99014) cormax,X(1),X(2) ! variable
         IF ( itr.NE.1.OR.t21.LT.ttmax ) THEN
           itr = itr + 1
           IF ( itr.LT.61 ) GOTO 500
-          ! WRITE (IOOUT,99015) U1(Npt) ! warning
+          WRITE (IOOUT,99015) U1(Npt) ! warning
         ELSE
           Tt = 0.
           Npt = Npt - 1
@@ -5086,7 +5181,7 @@ C FROZEN
         ENDIF
         GOTO 900
       ENDIF
-!  700  WRITE (IOOUT,99016) Tt,Npt ! error
+ 700  WRITE (IOOUT,99016) Tt,Npt ! error
       Tt = 0.
  800  IF ( Npt.LT.1 ) GOTO 1000
       Nsk = Npt
@@ -5099,49 +5194,49 @@ C FROZEN
       IF ( Npt.LE.Nsk ) GOTO 400
       Npt = Nsk
       IF ( refl ) THEN
-        ! IF ( .NOT.Eql ) WRITE (IOOUT,99020) ! header
-        ! IF ( Eql ) WRITE (IOOUT,99021) ! header
+        IF ( .NOT.Eql ) WRITE (IOOUT,99020) ! header
+        IF ( Eql ) WRITE (IOOUT,99021) ! header
         cr12 = '2'
         cr52 = '5'
       ELSE
-        ! IF ( .NOT.Eql ) WRITE (IOOUT,99018) ! header
-        ! IF ( Eql ) WRITE (IOOUT,99019) ! header
+        IF ( .NOT.Eql ) WRITE (IOOUT,99018) ! header
+        IF ( Eql ) WRITE (IOOUT,99019) ! header
         cr12 = '1'
         cr52 = '2'
       ENDIF
       Fmt(7) = '2,'
-      ! WRITE (IOOUT,Fmt) 'U'//cr52//', M/SEC      ',(utwo(j),j=1,Npt) ! variable
+      WRITE (IOOUT,Fmt) 'U'//cr52//', M/SEC      ',(utwo(j),j=1,Npt) ! variable
       CALL OUT2
       IF ( Trnspt ) CALL OUT4
-      ! WRITE (IOOUT,99017) ! empty line
+      WRITE (IOOUT,99017) ! empty line
       Fmt(7) = '3,'
-      ! WRITE (IOOUT,Fmt) 'P'//cr52//'/P'//cr12//'           ', ! variable
-    !  &              (p2p1(j),j=1,Npt) 
-      ! WRITE (IOOUT,Fmt) 'T'//cr52//'/T'//cr12//'           ', ! variable
-    !  &              (t2t1(j),j=1,Npt)
+      WRITE (IOOUT,Fmt) 'P'//cr52//'/P'//cr12//'           ', ! variable
+     &              (p2p1(j),j=1,Npt) 
+      WRITE (IOOUT,Fmt) 'T'//cr52//'/T'//cr12//'           ', ! variable
+     &              (t2t1(j),j=1,Npt)
       Fmt(7) = '4,'
-      ! WRITE (IOOUT,Fmt) 'M'//cr52//'/M'//cr12//'           ', ! variable
-    !  &              (m2m1(j),j=1,Npt)
-      ! WRITE (IOOUT,Fmt) 'RHO'//cr52//'/RHO'//cr12//'       ', ! variable
-    !  &              (rrho(j),j=1,Npt)
+      WRITE (IOOUT,Fmt) 'M'//cr52//'/M'//cr12//'           ', ! variable
+     &              (m2m1(j),j=1,Npt)
+      WRITE (IOOUT,Fmt) 'RHO'//cr52//'/RHO'//cr12//'       ', ! variable
+     &              (rrho(j),j=1,Npt)
       Fmt(7) = '2,'
-      ! IF ( .NOT.refl ) WRITE (IOOUT,Fmt) 'V2, M/SEC      ',(u1u2(j), ! variable
-    !  &               j=1,Npt)
-      ! IF ( refl ) WRITE (IOOUT,Fmt) 'U5+V2,M/SEC    ',(u1u2(j),j=1,Npt) ! variable
+      IF ( .NOT.refl ) WRITE (IOOUT,Fmt) 'V2, M/SEC      ',(u1u2(j), ! variable
+     &               j=1,Npt)
+      IF ( refl ) WRITE (IOOUT,Fmt) 'U5+V2,M/SEC    ',(u1u2(j),j=1,Npt) ! variable
       IF ( .NOT.Eql ) THEN
 C WRITE FROZEN MOLE (OR MASS) FRACTIONS
         Fmt(7) = '5,'
         IF ( .NOT.Incdeq ) THEN
           IF ( Massf ) THEN
-            ! WRITE (IOOUT,99022) 'MASS' ! header
+            WRITE (IOOUT,99022) 'MASS' ! header
           ELSE
-            ! WRITE (IOOUT,99022) 'MOLE' ! header
+            WRITE (IOOUT,99022) 'MOLE' ! header
             ww = wmx
           ENDIF
           DO n = 1,Nreac
             j = Jray(n)
             IF ( Massf ) ww = Mw(j)
-            ! WRITE (IOOUT,99023) Prod(j),(En(j,i)*ww,i=1,Npt) ! variable
+            WRITE (IOOUT,99023) Prod(j),(En(j,i)*ww,i=1,Npt) ! variable
           ENDDO
         ELSE
           Eql = .TRUE.
@@ -5277,25 +5372,25 @@ C SET ASSIGNED T
               Isv = Npt
               IF ( Npt.NE.NCOL ) GOTO 10
             ENDIF
-            ! IF ( .NOT.Hp ) WRITE (IOOUT,99001) ! header
-            ! IF ( Hp ) WRITE (IOOUT,99002) ! header
+            IF ( .NOT.Hp ) WRITE (IOOUT,99001) ! header
+            IF ( Hp ) WRITE (IOOUT,99002) ! header
             IF ( .NOT.Vol ) THEN
-              ! IF ( Hp ) WRITE (IOOUT,99006) ! header
-              ! IF ( Tp ) WRITE (IOOUT,99007) ! header
-              ! IF ( Sp ) WRITE (IOOUT,99008) ! header
+              IF ( Hp ) WRITE (IOOUT,99006) ! header
+              IF ( Tp ) WRITE (IOOUT,99007) ! header
+              IF ( Sp ) WRITE (IOOUT,99008) ! header
             ELSE
-              ! IF ( Uv ) WRITE (IOOUT,99003) ! header
-              ! IF ( Tv ) WRITE (IOOUT,99004) ! header
-              ! IF ( Sv ) WRITE (IOOUT,99005) ! header
+              IF ( Uv ) WRITE (IOOUT,99003) ! header
+              IF ( Tv ) WRITE (IOOUT,99004) ! header
+              IF ( Sv ) WRITE (IOOUT,99005) ! header
             ENDIF
             CALL OUT1
-            ! WRITE (IOOUT,99009) ! header
+            WRITE (IOOUT,99009) ! header
             CALL OUT2
             IF ( Trnspt ) CALL OUT4
             CALL OUT3
             Iplt = MIN(Iplt+Npt,500)
             IF ( Isv.EQ.0.AND.iof.EQ.Nof ) GOTO 200
-            ! WRITE (IOOUT,99010) ! empty space
+            WRITE (IOOUT,99010) ! empty space
             Npt = 0
  10         Npt = Npt + 1
             IF ( .NOT.Tp.AND.Tt.NE.0. ) T(1) = Tt
@@ -5391,7 +5486,7 @@ C PICK OUT IMPORTANT SPECIES
         DO j = 1,Ng
           IF ( En(j,Npt).GE.testen ) THEN
             IF ( Nm.GE.MAXTR ) THEN
-              ! WRITE (IOOUT,99001) Nm,Npt ! warning
+              WRITE (IOOUT,99001) Nm,Npt ! warning
               GOTO 200
             ELSE
               total = total + En(j,Npt)
@@ -5856,7 +5951,7 @@ C
       ENDIF
       READ (IOINP,99003,ERR=400) ntl,date,(sym(j),fno(j),j=1,5),
      &                 ifaz,mwt,hform
-      ! WRITE (IOOUT,99004) name,date,hform,notes ! variables
+      WRITE (IOOUT,99004) name,date,hform,notes ! variables
 C IF NTL=0, REACTANT WITHOUT COEFFICIENTS
       IF ( ntl.EQ.0 ) THEN
         IF ( ns.EQ.0 ) GOTO 300
@@ -6006,7 +6101,7 @@ C WRITE CONDENSED PRODUCTS AND REACTANTS ON IOTHM
         ENDDO
       ENDIF
       RETURN
-!  400  WRITE (IOOUT,99007) name ! error
+ 400  WRITE (IOOUT,99007) name ! error
       Readok = .FALSE.
       RETURN
 99001 FORMAT (4F10.3,a10)
@@ -6080,7 +6175,7 @@ C
           GOTO 100
         ENDIF
       ENDIF
-!  200  WRITE (IOOUT,99003) tname ! error
+ 200  WRITE (IOOUT,99003) tname ! error
       Readok = .FALSE.
  300  RETURN
 99001 FORMAT (2A16,2X,A1,I1,A1,I1)
