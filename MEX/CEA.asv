@@ -1,30 +1,25 @@
 classdef CEA < handle
 
-    properties (SetAccess = public)
+    properties (SetAccess = private)
         data;
-        ioinp;
         input;
+        ioinp;
     end
-    
+    p
     methods 
         function this = CEA()
             this.input = input_class(this);
         end
-        function data = run(obj,inputFile)
-            currentpath = which('CEA.m');
+        function data = run(obj)
             [pathstr,~,~] = fileparts(currentpath);
-            if ismac
-                inputFile = strcat('/',inputFile);
-            elseif isunix
-                inputFile = strcat('/',inputFile);
-            elseif ispc
-                inputFile = strcat('\',inputFile);
-            else
-                error('Platform not supported')
-            end  
-            data = cea2(inputFile,pathstr);
-            obj.data
-            return;
+            obj.data = dos(strcat(pathstr,'/PCEA2.out'));
+            
+        end
+        function data = get.data(obj)
+            data = obj.data;
+        end
+        function set.ioinp(obj, inp)
+            obj.ioinp = inp;
         end
 %         function input = rocket(obj, OF,pressure,presUnit, supar, PcPe, fuel, fuelWt, fuelTemp, oxid, oxidWt, oxidTemp)
 %             % examples

@@ -120,69 +120,58 @@ C     Declarations
 
       !Function declarations:
       mwPointer mxCreateString
-      mwPointer mxGetString    
-      mwPointer mxGetCell   
+      mwPointer mxGetString       
       mwPointer mxGetM, mxGetN
       INTEGER mxIsChar
 
-        INTEGER inputStatus, status1, status2
+        INTEGER status1, status2
 
       !Arguments for CEA Routine
       mwSize  maxbuf
       PARAMETER(maxbuf = 100)
-      CHARACTER*100 inputPath, inputFile, outputFile
-      CHARACTER inputStr(*,*)
+      CHARACTER*100 inputPath, inputFile, outputFile!, inputStr
       mwPointer pathLn,fileLn
-      mwSize inputLn(*)
-      mwIndex i
-
-      SAVE inputStr,inputLn,inputPath,pathLn,inputFile,fileLn,outputFile
+      !mwSize inputLn
 C-----------------------------------------------------------------------
-      if (nrhs .LT. 1) then
-         call mexErrMsgTxt ('One input required.')
-      elseif (nlhs .gt. 1) then
-         call mexErrMsgTxt ('Too many output arguments.')
-C     The input must be a row vector.
-      elseif (mxGetM(prhs(1)) .ne. 1) then
-         call mexErrMsgTxt ('Input must be a row vector.')
-      endif
+!       if (nrhs .LT. 1) then
+!          call mexErrMsgTxt ('One input required.')
+!       elseif (nlhs .gt. 1) then
+!          call mexErrMsgTxt ('Too many output arguments.')
+! C     The input must be a string.
+!       elseif(mxIsChar(prhs(1)) .ne. 1) then
+!          call mexErrMsgTxt ('Input must be a string.')
+! C     The input must be a row vector.
+!       elseif (mxGetM(prhs(1)) .ne. 1) then
+!          call mexErrMsgTxt ('Input must be a row vector.')
+!       endif
 
       !get length of input file strings
-      DO 10 i = 1,mxGetM(prhs(1))
-        inputLn(i) = mxGetN(mxGetCell(prhs(1),i))
-10    CONTINUE
-      fileLn = mxGetM(prhs(2))*mxGetN(prhs(2))
-      pathLn = mxGetM(prhs(3))*mxGetN(prhs(3))
-      if (fileLn .gt. maxbuf) then
-         call mexErrMsgTxt ('Max string length 100.')
-      endif
-      if (pathLn .gt. maxbuf) then
-        call mexErrMsgTxt ('Max string length 100.')
-      endif
+      fileLn = mxGetM(prhs(1))*mxGetN(prhs(1))
+      pathLn = mxGetM(prhs(2))*mxGetN(prhs(2))
+      !inputLn = mxGetM
+      ! if (fileLn .gt. maxbuf) then
+      !    call mexErrMsgTxt ('Max string length 100.')
+      ! endif
+      ! if (pathLn .gt. maxbuf) then
+      !   call mexErrMsgTxt ('Max string length 100.')
+      ! endif
 
       ! get string contents
-      DO 20 i = 1,mxGetM(prhs(1))
-        inputStatus = MXGETSTRING(mxGetCell(prhs(1),i),inputStr(i,:),inputLn(i))
-        if (inputStatus .ne. 0) then 
-          call mexErrMsgTxt ('Error reading string.')
-        endif
-20    CONTINUE
-      status1 = MXGETSTRING(prhs(2),inputFile, maxbuf)
-      status2 = MXGETSTRING(prhs(3),inputPath, maxbuf)
-      
-      if (status1 .ne. 0) then 
-         call mexErrMsgTxt ('Error reading string.')
-      endif
-      if (status2 .ne. 0) then 
-        call mexErrMsgTxt ('Error reading string.')
-      endif
+      status1 = MXGETSTRING(prhs(1),inputFile, maxbuf)
+      status2 = MXGETSTRING(prhs(2),inputPath, maxbuf)
+      ! if (status1 .ne. 0) then 
+      !    call mexErrMsgTxt ('Error reading string.')
+      ! endif
+      ! if (status2 .ne. 0) then 
+      !   call mexErrMsgTxt ('Error reading string.')
+      ! endif
     
 
       ! initialize output to empty string
       outputFile = ''
 
       ! call CEA
-      CALL CEA!(inputStr,inputLn,inputPath,pathLn,inputFile,fileLn,outputFile)
+      CALL CEA(inputPath,pathLn,inputFile,fileLn,outputFile)
 
       ! set outputFile to MATLAB mexFunction Output
       plhs(1) = MXCREATESTRING(outputFile)
@@ -192,23 +181,22 @@ C     The input must be a row vector.
       END
 C-----------------------------------------------------------------------
 C     Computational routine
-      SUBROUTINE CEA!(inputStr,inputLn,inputPath,pathLn,inputFile,
-    !  &               fileLn,outputFile)!inputPath,pathLn,
+      SUBROUTINE CEA(inputPath,pathLn,inputFile,fileLn,outputFile)!inputPath,pathLn,
       IMPLICIT NONE
       INCLUDE 'cea.inc'
 C LOCAL VARIABLES
       CHARACTER*15 ensert(20)
       CHARACTER*200 infile,ofile,filePrim,pathPrim,thermoFile,transFile
       CHARACTER*196 prefix
-      !CHARACTER inputStr(*),inputFile(*),outputFile(*),inputPath(*)
+      CHARACTER inputFile(*),outputFile(*),inputPath(*)
       LOGICAL caseok,ex,readok,inpop,outop
       INTEGER i,inc,iof,j,n!,ln,ln2
-      !mwSize  inputLn,inputIndex,pathIndex,fileLn,pathLn
+      mwSize  inputIndex,pathIndex,fileLn,pathLn
       INTEGER INDEX
       REAL*8 xi,xln
       REAL*8 DLOG
-      SAVE caseok,ensert,ex,i,inc,infile,iof,j,n,ofile,prefix,readok, !saves variables for use of other subroutines?
-     &  xi,xln!,inputStr,inputLn
+      SAVE caseok,ensert,ex,i,inc,infile,iof,j,n,ofile,prefix,readok, !saves variables, but where?
+     &  xi,xln
 
 
       filePrim = ''
@@ -239,7 +227,6 @@ C LOCAL VARIABLES
         INQUIRE (FILE=thermoFile,EXIST=ex)! Get information on opened files
         IF ( .NOT.ex ) THEN !if file does not exist then
           CALL mexErrMsgTxt('Cannot find thermo.lib and trans.lib')
-          GOTO 400
         ENDIF
       ENDIF
 
@@ -252,15 +239,9 @@ C LOCAL VARIABLES
       ! outputFile = filePrim
 
 
-      INQUIRE (FILE=thermoFile,EXIST=ex)! Get information on opened files
+      INQUIRE (FILE=infile,EXIST=ex)! Get information on opened files
       IF ( .NOT.ex ) THEN !if file does not exist then
-        CALL mexErrMsgTxt(thermoFile)
-        ! PRINT *,infile,' DOES NOT EXIST' !tell user the file doesnt exist
-        GOTO 400  !stop the program
-      ENDIF
-      INQUIRE (FILE=transFile,EXIST=ex)! Get information on opened files
-      IF ( .NOT.ex ) THEN !if file does not exist then
-        CALL mexErrMsgTxt(transFile)
+        CALL mexErrMsgTxt(infile)
         ! PRINT *,infile,' DOES NOT EXIST' !tell user the file doesnt exist
         GOTO 400  !stop the program
       ENDIF
@@ -358,7 +339,6 @@ C INITIAL ESTIMATES
       ENDIF
  200  IF ( readok ) GOTO 100
  300  CLOSE (IOINP)
-!  300  CLOSE (IOOUT)
       CLOSE (IOOUT)
       CLOSE (IOSCH)
       CLOSE (IOTHM)

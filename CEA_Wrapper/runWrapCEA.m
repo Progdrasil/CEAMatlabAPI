@@ -35,7 +35,7 @@ function [ data ] = runWrapCEA( OF,pressure, supar, PcPe, fuel, fuelWt, fuelTemp
     %       - EXIT
     % -----------EXAMPLES------------
     % with one fuel and oxidiser
-    %   data = runWrapCEA( 3 , 350 , 4.84 , 23.8 , 'paraffin' , 100, 298.15 , 'N2O', 100, 'testDir',false)
+    %   data = runWrapCEA( 3 , 350 , 4.84 , 23.8 , 'paraffin' , 100, 298.15 , 'N2O', 100, 298.15, 'testDir',false)
     %
     % with multiple fuels and oxidizers
     %   data = runWrapCEA( 3 , 350 , 4.84 , 23.8 , {'paraffin' 'CH4' 'RP-1'} , [50 25 25], [298.15 298.15 298.15], {'N2O' 'O2(L)'}, [75 25],[298.15 90.1], 'testDir',true)
@@ -77,30 +77,30 @@ function [ data ] = runWrapCEA( OF,pressure, supar, PcPe, fuel, fuelWt, fuelTemp
     IOinp = fopen(strcat(pathstr,'/wrapper.inp'),'w');
     
     % Write data in wrapper.inp
-    fprintf(IOinp,'prob case=wrapper ro equilibrium \n\n');
-    fprintf(IOinp,' ! iac problem \n');
-    fprintf(IOinp,'o/f %g\n',OF);   %oxidiser to fuel ratio
-    fprintf(IOinp,'p,%s  %g\n',presUnt,pressure); %pressure
-    fprintf(IOinp,'supar %g\n',supar);  %supersonic area ratio
-    fprintf(IOinp,'pip %g\n',PcPe);    %Pc/Pe
-    fprintf(IOinp,'reac\n');
+    fprintf('prob case=wrapper ro equilibrium \n\n');
+    fprintf(' ! iac problem \n');
+    fprintf('o/f %g\n',OF);   %oxidiser to fuel ratio
+    fprintf('p,%s  %g\n',presUnt,pressure); %pressure
+    fprintf('supar %g\n',supar);  %supersonic area ratio
+    fprintf('pip %g\n',PcPe);    %Pc/Pe
+    fprintf('reac\n');
     if length(fuelWt)>1
         for i = 1:length(fuelWt)
-            fprintf(IOinp,'  fuel  %s wt%%=%6.3f t,k=%6.2f\n',fuel{i},fuelWt(i),fuelTemp(i));
+            fprintf('  fuel  %s wt%%=%6.3f t,k=%6.2f\n',fuel{i},fuelWt(i),fuelTemp(i));
         end
     else
-        fprintf(IOinp,'  fuel  %s wt%%=%g. t,k=%6.2f\n',fuel,fuelWt,fuelTemp);
+        fprintf('  fuel  %s wt%%=%g. t,k=%6.2f\n',fuel,fuelWt,fuelTemp);
     end
     if length(oxidWt)>1
         for i = 1:length(oxidWt)
-            fprintf(IOinp,'  oxid  %s wt%%=%6.3f t,k=%6.2f\n',oxid{i},oxidWt(i),oxidTemp(i));
+            fprintf('  oxid  %s wt%%=%6.3f t,k=%6.2f\n',oxid{i},oxidWt(i),oxidTemp(i));
         end
     else
-        fprintf(IOinp,'  oxid  %s wt%%=%g. t,k=%6.2f\n',oxid,oxidWt,oxidTemp);
+        fprintf('  oxid  %s wt%%=%g. t,k=%6.2f\n',oxid,oxidWt,oxidTemp);
     end
-    fprintf(IOinp,'output    short\n');
-    fprintf(IOinp,'output trace=1e-5\n');
-    fprintf(IOinp,'end\n');
+    fprintf('output    short\n');
+    fprintf('output trace=1e-5\n');
+    fprintf('end\n');
     
     % Close wrapper.inp
     fclose(IOinp);
