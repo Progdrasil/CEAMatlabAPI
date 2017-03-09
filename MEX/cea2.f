@@ -131,7 +131,7 @@ C     Declarations
       mwSize  maxbuf
       PARAMETER(maxbuf = 100)
       CHARACTER*100 inputPath, inputFile, outputFile
-      CHARACTER inputStr(*,*)
+      CHARACTER, DIMENSION(50,132) inputStr
       mwPointer pathLn,fileLn
       mwSize inputLn(*)
       mwIndex i
@@ -200,6 +200,7 @@ C LOCAL VARIABLES
       CHARACTER*15 ensert(20)
       CHARACTER*200 infile,ofile,filePrim,pathPrim,thermoFile,transFile
       CHARACTER*196 prefix
+      CHARACTER*(*) errMsg
       !CHARACTER inputStr(*),inputFile(*),outputFile(*),inputPath(*)
       LOGICAL caseok,ex,readok,inpop,outop
       INTEGER i,inc,iof,j,n!,ln,ln2
@@ -208,7 +209,7 @@ C LOCAL VARIABLES
       REAL*8 xi,xln
       REAL*8 DLOG
       SAVE caseok,ensert,ex,i,inc,infile,iof,j,n,ofile,prefix,readok, !saves variables for use of other subroutines?
-     &  xi,xln!,inputStr,inputLn
+     &  xi,xln,errMsg!,inputStr,inputLn
 
 
       filePrim = ''
@@ -283,6 +284,8 @@ C LOCAL VARIABLES
           IF ( Oxf(iof).EQ.0..AND.B0p(1,1).NE.0. ) THEN
             DO i = 1,Nlm
               IF ( B0p(i,1).EQ.0..OR.B0p(i,2).EQ.0. ) THEN
+                WRITE(errMsg,99008)
+                CALL mexErrMsgIdAndTxt('CEA:Input:Oxidant',errMsg)
                 WRITE (IOOUT,99008) ! Error message
                 GOTO 200
               ENDIF
@@ -335,6 +338,8 @@ C INITIAL ESTIMATES
                 GOTO 120
               ENDIF
             ENDDO
+            WRITE(errMsg,99004) ensert(i)
+            CALL mexWarnMsgIdAndTxt('CEA:Input:Missing',errMsg)
             WRITE (IOOUT,99004) ensert(i) ! Warning handling
  120      CONTINUE
         ENDIF
@@ -670,6 +675,8 @@ C CONVERGENCE TEST
                   Vmoc(Npt) = ud/(Rr*gm1(Npt)*t1/Wmix)**.5
                 ENDIF
               ELSE
+                WRITE (errMsg,99004)
+                CALL mexErrMsgIdAndTxt('CEA:INPUT',errMsg)
                 WRITE (IOOUT,99004) !error handling
                 Npt = Npt - 1
                 Tt = 0.
@@ -2156,6 +2163,7 @@ C
       ch1(1) = ' '
       nch1 = 1
 C READ CHARACTERS, ONE AT A TIME
+      ch1 = inputStr(index,:)
       READ (IOINP,99001,END=500,ERR=500) ch1
 C FIND FIRST AND LAST NON-BLANK CHARACTER
       DO i = 132,1, - 1
