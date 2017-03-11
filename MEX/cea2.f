@@ -133,26 +133,27 @@ C     Declarations
       INTEGER mxIsChar
       mwPointer mxCreateStructArray
       INTEGER*4 mxAddField
+      INTEGER*4 mxGetFieldNumber
       ! mwPointer mxSetField
       !   mwPointer pm, pvalue
       !   mwIndex index
       !   character*(*) fieldname
       ! end
 
-        INTEGER inputStatus, status1, status2
+        INTEGER inputStatus, status1, status2,testNum
 
       !Arguments for CEA Routine
       mwSize  maxbuf
       PARAMETER(maxbuf = 100)
       CHARACTER*100 inputPath, inputFile, outputFile
-      CHARACTER*132 tempStr
+      CHARACTER*132 tempStr,errMsg
       CHARACTER, DIMENSION(50,132) :: inputStr
       mwPointer pathLn,fileLn
       mwSize, DIMENSION(50):: inputLn
-      mwIndex i,j
+      mwIndex i,j,outStatus
       mwPointer exInp
+      mwPointer outputData
 
-      mwPointer testStruct
 
 C-----------------------------------------------------------------------
       if (nrhs .LT. 1) then
@@ -201,17 +202,32 @@ C     The input must be a row vector.
 
       ! initialize output to empty string
       outputFile = ''
+      outputData = mxCreateStructArray(1,[1],1,'temp')
+      CALL mxRemoveField(outputData,1)
 
       ! call CEA
       CALL CEA(inputStr,inputLn,inputPath,pathLn,inputFile,fileLn,
-     &        outputFile,exInp)
+     &        outputFile,exInp,outputData)
 
       ! set outputFile to MATLAB mexFunction Output
-      plhs(1) = mxCreateStructArray(1,[1],1,['PinfP'])
-      testStruct = mxCreateStructArray(1,[1],4,['CHAMBER','THROAT',
-     &               'EXIT','EXIT'])
-      CALL mxSetField(plhs(1),1,'PinfP',testStruct)
-
+      plhs(1) = outputData
+      
+    !   testStruct = mxCreateStructArray(1,[1],4,['CHAMBER','THROAT',
+    !  &               'EXIT','EXIT'])
+    !   outStatus = mxAddField(plhs(1),'PinfP')
+    !   IF (outStatus.EQ.-1) THEN
+    !     CALL mexErrMsgIdAndTxt('CEA:MEX:output','new field doesnt work')
+    !   ENDIF
+    !   ! testNum = mxGetFieldNumber(plhs(1),'PinfP')
+    !   ! IF (testNum.EQ.-1) THEN
+    !   !   CALL mexErrMsgIdAndTxt('CEA:MEX:output','new field doesnt work')
+    !   ! ENDIF
+    !   WRITE(errMsg,99001) outStatus
+    !   CALL mexPrintf('\n the index for PinfP is: ')
+    !   CALL mexPrintf(errMsg)
+    !   ! CALL mxSetField(plhs(1),1,'PinfP',testStruct)
+    !   CALL mxSetFieldByNumber(plhs(1),4,outStatus,testStruct)
+99001 FORMAT(I3)
 
       RETURN
       END
@@ -234,7 +250,7 @@ C-----------------------------------------------------------------------
       END
 C     Computational routine
       SUBROUTINE CEA(inputStr,inputLn,inputPath,pathLn,inputFile,
-     &               fileLn,outputFile,exInp)!inputPath,pathLn,
+     &               fileLn,outputFile,exInp,outputData)!inputPath,pathLn,
       IMPLICIT NONE
       INCLUDE 'cea.inc'
       
@@ -252,6 +268,7 @@ C LOCAL VARIABLES
       INTEGER INDEX,exInp,jline
       REAL*8 xi,xln
       REAL*8 DLOG
+      mwPointer outputData
       SAVE caseok,ensert,ex,i,inc,infile,iof,j,n,ofile,prefix,readok, !saves variables for next time this subroutine is called
      &  xi,xln!,inputStr,inputLn
 
