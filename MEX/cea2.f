@@ -113,6 +113,7 @@ C     Gateway routine
       SUBROUTINE MexFunction(nlhs, plhs, nrhs, prhs)
 C     Declarations
       IMPLICIT NONE
+      
 
       !mex Function arguments
       mwPointer plhs(*), prhs(*)
@@ -131,20 +132,21 @@ C     Declarations
       mwSize  maxbuf
       PARAMETER(maxbuf = 100)
       CHARACTER*100 inputPath, inputFile, outputFile
-      CHARACTER, DIMENSION(50,132) inputStr
+      CHARACTER*132 tempStr
+      CHARACTER, DIMENSION(50,132) :: inputStr
       mwPointer pathLn,fileLn
-      mwSize inputLn(*)
-      mwIndex i
+      mwSize, DIMENSION(50):: inputLn
+      mwIndex i,j
+      mwPointer exInp
 
-      SAVE inputStr,inputLn,inputPath,pathLn,inputFile,fileLn,outputFile
 C-----------------------------------------------------------------------
       if (nrhs .LT. 1) then
          call mexErrMsgTxt ('One input required.')
       elseif (nlhs .gt. 1) then
          call mexErrMsgTxt ('Too many output arguments.')
 C     The input must be a row vector.
-      elseif (mxGetM(prhs(1)) .ne. 1) then
-         call mexErrMsgTxt ('Input must be a row vector.')
+      ! elseif (mxGetM(prhs(1)) .ne. 1) then
+      !    call mexErrMsgTxt ('Input must be a row vector.')
       endif
 
       !get length of input file strings
@@ -162,7 +164,10 @@ C     The input must be a row vector.
 
       ! get string contents
       DO 20 i = 1,mxGetM(prhs(1))
-        inputStatus = MXGETSTRING(mxGetCell(prhs(1),i),inputStr(i,:),inputLn(i))
+        inputStatus = MXGETSTRING(mxGetCell(prhs(1),i),
+     &                        tempStr,inputLn(i))
+        CALL STRINGARRAY(i,tempStr,inputStr,inputLn(i))
+        CALL mexPrintf('\n')
         if (inputStatus .ne. 0) then 
           call mexErrMsgTxt ('Error reading string.')
         endif
@@ -176,13 +181,15 @@ C     The input must be a row vector.
       if (status2 .ne. 0) then 
         call mexErrMsgTxt ('Error reading string.')
       endif
-    
+      
+      exInp = mxGetM(prhs(1))
 
       ! initialize output to empty string
       outputFile = ''
 
       ! call CEA
-      CALL CEA!(inputStr,inputLn,inputPath,pathLn,inputFile,fileLn,outputFile)
+      CALL CEA(inputStr,inputLn,inputPath,pathLn,inputFile,fileLn,
+     &        outputFile,exInp)
 
       ! set outputFile to MATLAB mexFunction Output
       plhs(1) = MXCREATESTRING(outputFile)
@@ -191,26 +198,44 @@ C     The input must be a row vector.
       RETURN
       END
 C-----------------------------------------------------------------------
+      SUBROUTINE STRINGARRAY(i,tempStr,inputStr,inputLn)
+      IMPLICIT NONE
+      
+      mwIndex i,j
+      CHARACTER tempStr(*)
+      CHARACTER, DIMENSION(50,132) :: inputStr
+      mwSize inputLn
+      DO 10 j = 1,inputLn
+        inputStr(i,j) = tempStr(j)
+        CALL mexPrintf(inputStr(i,j))
+10    CONTINUE
+      DO 20 j = inputLn+1,132
+        inputStr(i,j) = ''
+20    CONTINUE
+      RETURN
+      END
 C     Computational routine
-      SUBROUTINE CEA!(inputStr,inputLn,inputPath,pathLn,inputFile,
-    !  &               fileLn,outputFile)!inputPath,pathLn,
+      SUBROUTINE CEA(inputStr,inputLn,inputPath,pathLn,inputFile,
+     &               fileLn,outputFile,exInp)!inputPath,pathLn,
       IMPLICIT NONE
       INCLUDE 'cea.inc'
+      
 C LOCAL VARIABLES
       CHARACTER*15 ensert(20)
       CHARACTER*200 infile,ofile,filePrim,pathPrim,thermoFile,transFile
       CHARACTER*196 prefix
-      CHARACTER*(*) errMsg
-      !CHARACTER inputStr(*),inputFile(*),outputFile(*),inputPath(*)
+      CHARACTER(LEN=500) :: errMsg
+      CHARACTER inputFile(*),outputFile(*),inputPath(*)
+      CHARACTER, DIMENSION(50,132) :: inputStr
       LOGICAL caseok,ex,readok,inpop,outop
       INTEGER i,inc,iof,j,n!,ln,ln2
-      !mwSize  inputLn,inputIndex,pathIndex,fileLn,pathLn
-      INTEGER INDEX
+      mwSize  inputIndex,pathIndex,fileLn,pathLn
+      mwSize, DIMENSION(50):: inputLn
+      INTEGER INDEX,exInp,jline
       REAL*8 xi,xln
       REAL*8 DLOG
-      SAVE caseok,ensert,ex,i,inc,infile,iof,j,n,ofile,prefix,readok, !saves variables for use of other subroutines?
-     &  xi,xln,errMsg!,inputStr,inputLn
-
+      SAVE caseok,ensert,ex,i,inc,infile,iof,j,n,ofile,prefix,readok, !saves variables for next time this subroutine is called
+     &  xi,xln!,inputStr,inputLn
 
       filePrim = ''
       DO 10 inputIndex = 1,fileLn
@@ -239,7 +264,8 @@ C LOCAL VARIABLES
         transFile = TRIM(pathPrim)//'\trans.lib'
         INQUIRE (FILE=thermoFile,EXIST=ex)! Get information on opened files
         IF ( .NOT.ex ) THEN !if file does not exist then
-          CALL mexErrMsgTxt('Cannot find thermo.lib and trans.lib')
+          WRITE(errMsg,*) 'Cannot find thermo.lib and trans.lib'
+          CALL mexErrMsgIdAndTxt('CEA2:MAIN:LIBS',errMsg)
           GOTO 400
         ENDIF
       ENDIF
@@ -265,20 +291,21 @@ C LOCAL VARIABLES
         ! PRINT *,infile,' DOES NOT EXIST' !tell user the file doesnt exist
         GOTO 400  !stop the program
       ENDIF
-      OPEN (IOINP,FILE=infile,STATUS='old',FORM='formatted')! open input file given by user
+      ! OPEN (IOINP,FILE=infile,STATUS='old',FORM='formatted')! open input file given by user
       OPEN (IOOUT,FILE=ofile,STATUS='unknown',FORM='formatted') !create and open output file
       OPEN (IOSCH,STATUS='scratch',FORM='unformatted')! FIND OUT
       OPEN (IOTHM,FILE=thermoFile,FORM='unformatted')!open termodynamics library 
       OPEN (IOTRN,FILE=transFile,FORM='unformatted')!Open trans library (WHAT IS TRANS LIBRARY?)
 
-      WRITE (IOOUT,99006) !make a seperation line in output
-      WRITE (IOOUT,99007) !write authors and name of application in output
-      WRITE (IOOUT,99006) !make another seperation line in output
+      ! WRITE (IOOUT,99006) !make a seperation line in output
+      ! WRITE (IOOUT,99007) !write authors and name of application in output
+      ! WRITE (IOOUT,99006) !make another seperation line in output
       readok = .TRUE.   ! Was able to read input file
       Newr = .FALSE.  
+      jline = 1
  100  Iplt = 0
       Nplt = 0
-      CALL INPUT(readok,caseok,ensert) !Subroutine defined at line 2118
+      CALL INPUT(readok,caseok,ensert,inputStr,exInp,jline) !Subroutine defined at line 2118
       IF ( caseok.AND.readok ) THEN
         DO iof = 1,Nof
           IF ( Oxf(iof).EQ.0..AND.B0p(1,1).NE.0. ) THEN
@@ -362,30 +389,30 @@ C INITIAL ESTIMATES
         ENDIF
       ENDIF
  200  IF ( readok ) GOTO 100
- 300  CLOSE (IOINP)
-!  300  CLOSE (IOOUT)
-      CLOSE (IOOUT)
+!  300  CLOSE (IOINP)
+      ! CLOSE (IOOUT)
+ 300  CLOSE (IOOUT)
       CLOSE (IOSCH)
       CLOSE (IOTHM)
       CLOSE (IOTRN)
       CLOSE (IOPLT)
  400  RETURN
-99001 FORMAT (//' ENTER INPUT FILE NAME WITHOUT .inp EXTENSION.'/ 
-     &        '   THE OUTPUT FILES FOR LISTING AND PLOTTING WILL HAVE',/
+99001 FORMAT (' ENTER INPUT FILE NAME WITHOUT .inp EXTENSION.'
+     &        '   THE OUTPUT FILES FOR LISTING AND PLOTTING WILL HAVE',
      &       ' THE SAME NAME WITH EXTENSIONS .out AND .plt RESPECTIVELY'
-     &       //)
+     &       )
 99002 FORMAT (a)
 99003 FORMAT (1X,A16,'INSERTED')
-99004 FORMAT (/' WARNING!!!',A16,'NOT FOUND FOR INSERTION')
+99004 FORMAT (' WARNING!!!',A16,'NOT FOUND FOR INSERTION')
 99005 FORMAT (1x,1p,20E12.4)
-99006 FORMAT (/' ***************************************************',
+99006 FORMAT (' ***************************************************',
      &        '****************************')
-99007 FORMAT (/,9x,'NASA-GLENN CHEMICAL EQUILIBRIUM PROGRAM CEA2,',
-     &        ' MAY 21, 2004',/19x,'BY  BONNIE MCBRIDE', 
-     &        ' AND SANFORD GORDON',/5x,
+99007 FORMAT (9x,'NASA-GLENN CHEMICAL EQUILIBRIUM PROGRAM CEA2,',
+     &        ' MAY 21, 2004',19x,'BY  BONNIE MCBRIDE', 
+     &        ' AND SANFORD GORDON',5x,
      &        ' REFS: NASA RP-1311, PART I, 1994',
      &        ' AND NASA RP-1311, PART II, 1996')
-99008 FORMAT (/,'OXIDANT NOT PERMITTED WHEN SPECIFYING 100% FUEL(main)')
+99008 FORMAT ('OXIDANT NOT PERMITTED WHEN SPECIFYING 100% FUEL(main)')
 99009 FORMAT ('#',2x,20A12)
       END
       BLOCKDATA 
@@ -558,6 +585,7 @@ C***********************************************************************
 C LOCAL VARIABLES
       CHARACTER*15 fdv,fg1,fh1,fhs1,fm1,fmm1,fpp1,frr1,ft1,ftt1
       CHARACTER*3 unit
+      CHARACTER(len=500)::errMsg
       INTEGER i,ii,iof,itr,j,mdv,mgam,mh,mmach,mp,mson,mt,mxx(8)
       INTEGER INDEX
       REAL*8 a11,a12,a21,a22,alam,alfa,amm,b1,b2,cpl(NCOL),d,gam,
@@ -798,7 +826,7 @@ c     Iplt = MIN(Iplt+Npt,500)
 99003 FORMAT (/' ITER =',I2,5X,'P/P1 =',E15.8,/7X,'T/T1 =',E15.8,5X,
      &        'RHO/RHO1 =',E15.8,/7X,'DEL LN P/P1 =',E15.8,5X,
      &        'DEL LN T/T1 =',E15.8)
-99004 FORMAT (/
+99004 FORMAT (
      &        ' CONSERVATION EQNS NOT SATISFIED IN 8 ITERATIONS (DETON)'
      &        )
 99005 FORMAT (//,21X,'DETONATION PROPERTIES OF AN IDEAL REACTING GAS')
@@ -2114,7 +2142,7 @@ C FOR CONDENSED SPECIES:  SJ = S(J)
 99003 FORMAT (/' ERROR IN DATA FOR ',A15,' CHECK NAME AND TEMPERATURE',
      &        ' RANGE IN',/,' thermo.inp (HCALC)')
       END
-      SUBROUTINE INFREE(Readok,Cin,Ncin,Lcin,Dpin)
+      SUBROUTINE INFREE(Readok,Cin,Ncin,Lcin,Dpin,inputStr,jline,exInp)
 C***********************************************************************
 C FREE-FORM READ FOR CEA.  READS AND DECIPHERS DATA FOR ONE DATASET.
 C
@@ -2146,7 +2174,10 @@ C LOCAL VARIABLES
       CHARACTER*3 fmtl(3)
       CHARACTER*2 numg(24)
       CHARACTER*4 w1
-      INTEGER i,ich1,j,kcin,nb,nch1,nx
+      CHARACTER(LEN=500):: errMsg
+      INTEGER i,ich1,j,kcin,nb,nch1,nx,index
+      INTEGER jline,exInp
+      CHARACTER, DIMENSION(50,132) :: inputStr
 C
       DATA fmtl/'(g','16','.0)'/
       DATA nums/'+','-','0','1','2','3','4','5','6','7','8','9','.'/
@@ -2156,6 +2187,7 @@ C
       Lcin(1) = 0
       kcin = 0
       Dpin(1) = 0.D0
+      ! jline = 1
  100  nb = 1
       nx = 0
       cnum = ' '
@@ -2163,16 +2195,30 @@ C
       ch1(1) = ' '
       nch1 = 1
 C READ CHARACTERS, ONE AT A TIME
-      ch1 = inputStr(index,:)
-      READ (IOINP,99001,END=500,ERR=500) ch1
+      IF ( jline.GT.exInp ) GOTO 500
+      CALL mexPrintf('\n')
+      DO 10 index = 1,132
+        ch1(index) = inputStr(jline,index)
+        CALL mexPrintf(ch1(index))
+10    CONTINUE
+      WRITE(errMsg,99005) jline
+      CALL mexPrintf('\t')
+      CALL mexPrintf(errMsg)
+      jline = jline + 1
+      ! jline = jline + 1
+!       READ (IOINP,99001,END=500,ERR=500) ch1
+!       CALL mexPrintf('\n')
+!       DO 20 index = 1,132
+!         CALL mexPrintf(ch1(index))
+! 20    CONTINUE
 C FIND FIRST AND LAST NON-BLANK CHARACTER
       DO i = 132,1, - 1
         nch1 = i
-        IF ( ch1(i).NE.' '.AND.ch1(i).NE.'	' ) GOTO 200
+        IF( ch1(i).NE.' '.AND.ch1(i).NE.'	'.AND.ch1(i).NE.'' )GOTO 200
       ENDDO
  200  DO i = 1,nch1
         ich1 = i
-        IF ( ch1(i).NE.' '.AND.ch1(i).NE.'	' ) GOTO 300
+        IF( ch1(i).NE.' '.AND.ch1(i).NE.'	'.AND.ch1(i).NE.'' )GOTO 300
       ENDDO
  300  IF ( nch1.EQ.1.OR.ch1(ich1).EQ.'#'.OR.ch1(ich1).EQ.'!' ) THEN
         WRITE (IOOUT,99002) (ch1(i),i=1,nch1)
@@ -2194,11 +2240,20 @@ C IS STRING A KEYWORD SIGNALLING START OR END OF DATASET?
           Lcin(1) = -4
         ELSE
 C KEYWORD READ FOR NEXT DATASET. END PROCESSING
-          BACKSPACE IOINP
+          ! BACKSPACE IOINP
+          jline = jline - 1
           IF ( nx.EQ.0 ) Ncin = Ncin - 1
           RETURN
         ENDIF
+      ! ELSEIF ( jline.GT.exInp ) GOTO 500
+      
       ELSEIF ( Ncin.EQ.1 ) THEN
+        WRITE(errMsg,99005) jline
+        CALL mexPrintf('\nbreaks at: ')
+        CALL mexPrintf(errMsg)
+        WRITE(errMsg,99005) exInp
+        CALL mexPrintf('\nexit is at at: ')
+        CALL mexPrintf(errMsg)
         WRITE (IOOUT,99003) ! error
         GOTO 500
       ENDIF
@@ -2262,8 +2317,9 @@ C INTERNAL READ TO CONVERT TO NUMERIC
 99002 FORMAT (1x,80A1)
 99003 FORMAT (/' FATAL ERROR IN INPUT FORMAT (INFREE)')
 99004 FORMAT (/' WARNING!!  UNACCEPTABLE NUMBER ',A15,' (INFREE)')
+99005 FORMAT(I3)
       END
-      SUBROUTINE INPUT(Readok,Caseok,Ensert)
+      SUBROUTINE INPUT(Readok,Caseok,Ensert,inputStr,exInp,jline)
 C***********************************************************************
 C DECIPHER KEYWORDS, LITERAL VARIABLES, & NUMERICAL VARIABLES IN INPUT.
 C***********************************************************************
@@ -2279,9 +2335,11 @@ C LOCAL VARIABLES
       CHARACTER*2 cx2
       CHARACTER*3 cx3
       CHARACTER*26 lc,uc
+      CHARACTER, DIMENSION(50,132) :: inputStr
       LOGICAL eqrats,incd,phi,pltdat,reacts,refl
       INTEGER i,ifrmla,ii,in,iv,ix,j,jj,k,lcin(MAXNGC),ncin,nmix
-      INTEGER INDEX
+      INTEGER INDEX,exInp
+      INTEGER jline != 1
       REAL*8 denmtr,dpin(MAXNGC),eratio,hr,mix(MAXNGC),ur,xyz
       REAL*8 DABS,DMIN1,DSQRT
 C     gives the save atribute to the variables, so you can access them outsite this subroutine.
@@ -2307,8 +2365,9 @@ C     Initialize variables
       Nplt = 0
       Siunit = .TRUE.
       pltdat = .FALSE.
+      ! jline = 1
 C CALL INFREE TO READ DATASET
- 100  CALL INFREE(Readok,cin,ncin,lcin,dpin)
+ 100  CALL INFREE(Readok,cin,ncin,lcin,dpin,inputStr,jline,exInp)
       IF ( .NOT.Readok ) GOTO 400
       code = cin(1)
       IF ( code.NE.'    ' ) THEN
@@ -2633,7 +2692,7 @@ C ASSOCIATED NUMERICAL DATA.
           iv = 2
           Nof = 0
           GOTO 200
-        ELSEIF ( code(1:3).EQ.'end' ) THEN
+        ELSEIF ( code(1:3).EQ.'end') THEN
           IF ( Shock ) THEN
             IF ( incd.AND.Froz ) Incdfz = .TRUE.
             IF ( incd.AND.Eql ) Incdeq = .TRUE.
@@ -5962,7 +6021,7 @@ C
       inew = 0
       tinf = 1.D06
       REWIND IOSCH
-      READ (IOINP,99001) tgl,Thdate
+      ! READ (IOINP,99001) tgl,Thdate
  100  DO i = 1,3
         fill(i) = .TRUE.
         DO j = 1,9
@@ -5972,21 +6031,21 @@ C
       hform = 0.
       tl(1) = 0.
       tl(2) = 0.
-      READ (IOINP,99002,END=300,ERR=400) name,notes
+      ! READ (IOINP,99002,END=300,ERR=400) name,notes
       IF ( name(:3).EQ.'END'.OR.name(:3).EQ.'end' ) THEN
         IF ( INDEX(name,'ROD').EQ.0.AND.INDEX(name,'rod').EQ.0 )
      &       GOTO 300
         ns = nall
         GOTO 100
       ENDIF
-      READ (IOINP,99003,ERR=400) ntl,date,(sym(j),fno(j),j=1,5),
-     &                 ifaz,mwt,hform
+      ! READ (IOINP,99003,ERR=400) ntl,date,(sym(j),fno(j),j=1,5),
+    !  &                 ifaz,mwt,hform
       WRITE (IOOUT,99004) name,date,hform,notes ! variables
 C IF NTL=0, REACTANT WITHOUT COEFFICIENTS
       IF ( ntl.EQ.0 ) THEN
         IF ( ns.EQ.0 ) GOTO 300
         nall = nall + 1
-        READ (IOINP,99005,ERR=400) tl,ncoef,expn,hh
+        ! READ (IOINP,99005,ERR=400) tl,ncoef,expn,hh
         thermo(1,1) = hform
         WRITE (IOSCH) name,ntl,date,(sym(j),fno(j),j=1,5),ifaz,tl,mwt,
      &                thermo
@@ -6004,8 +6063,8 @@ C IF NTL=0, REACTANT WITHOUT COEFFICIENTS
         mwt = 5.48579903D-04
       ENDIF
       DO 200 i = 1,ntl
-        READ (IOINP,99005,ERR=400) tl,ncoef,expn,hh
-        READ (IOINP,99006,ERR=400) templ
+        ! READ (IOINP,99005,ERR=400) tl,ncoef,expn,hh
+        ! READ (IOINP,99006,ERR=400) templ
         IF ( ifaz.EQ.0.AND.i.GT.3 ) GOTO 400
         IF ( ifaz.LE.0 ) THEN
           IF ( tl(2).GT.tgl(4)-.01D0 ) THEN
@@ -6170,7 +6229,7 @@ C
  100  DO i = 1,36
         tc(i) = 0.
       ENDDO
-      READ (IOINP,99001) tname,vvl,nv,cc,ncc
+      ! READ (IOINP,99001) tname,vvl,nv,cc,ncc
       IF ( tname(1).EQ.'end'.OR.tname(1).EQ.'LAST' ) THEN
         WRITE (IOTRN) ns
         REWIND IOSCH
@@ -6185,7 +6244,7 @@ C
         nn = nv + ncc
         IF ( nv.LE.3.AND.ncc.LE.3 ) THEN
           DO in = 1,nn
-            READ (IOINP,99002) vorc,tcin
+            ! READ (IOINP,99002) vorc,tcin
             IF ( vorc.EQ.'C' ) THEN
               k = 2
               ic = ic + 1

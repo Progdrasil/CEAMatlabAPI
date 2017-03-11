@@ -1,1 +1,13 @@
 CEA2.f
+	UTHERM
+6024 	READ (IOINP,99001) tgl,Thdate
+6034	READ (IOINP,99002,END=300,ERR=400) name,notes
+6041	READ (IOINP,99003,ERR=400) ntl,date,(sym(j),fno(j),j=1,5),
+&                 ifaz,mwt,hform
+6048	READ (IOINP,99005,ERR=400) tl,ncoef,expn,hh
+6066	READ (IOINP,99005,ERR=400) tl,ncoef,expn,hh
+6067	READ (IOINP,99006,ERR=400) templ
+
+	UTRAN
+6232	READ (IOINP,99001) tname,vvl,nv,cc,ncc
+6247	READ (IOINP,99002) vorc,tcin

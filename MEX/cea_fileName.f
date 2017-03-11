@@ -188,6 +188,7 @@ C LOCAL VARIABLES
       CHARACTER*15 ensert(20)
       CHARACTER*200 infile,ofile,filePrim,pathPrim,thermoFile,transFile
       CHARACTER*196 prefix
+      CHARACTER(LEN=500):: errMsg
       CHARACTER inputFile(*),outputFile(*),inputPath(*)
       LOGICAL caseok,ex,readok,inpop,outop
       INTEGER i,inc,iof,j,n!,ln,ln2
@@ -196,7 +197,7 @@ C LOCAL VARIABLES
       REAL*8 xi,xln
       REAL*8 DLOG
       SAVE caseok,ensert,ex,i,inc,infile,iof,j,n,ofile,prefix,readok, !saves variables, but where?
-     &  xi,xln
+     &  xi,xln,errMsg
 
 
       filePrim = ''
@@ -351,7 +352,7 @@ C INITIAL ESTIMATES
      &       //)
 99002 FORMAT (a)
 99003 FORMAT (1X,A16,'INSERTED')
-99004 FORMAT (/' WARNING!!!',A16,'NOT FOUND FOR INSERTION')
+99004 FORMAT (/,' WARNING!!!',A16,'NOT FOUND FOR INSERTION')
 99005 FORMAT (1x,1p,20E12.4)
 99006 FORMAT (/' ***************************************************',
      &        '****************************')
@@ -360,7 +361,7 @@ C INITIAL ESTIMATES
      &        ' AND SANFORD GORDON',/5x,
      &        ' REFS: NASA RP-1311, PART I, 1994',
      &        ' AND NASA RP-1311, PART II, 1996')
-99008 FORMAT (/,'OXIDANT NOT PERMITTED WHEN SPECIFYING 100% FUEL(main)')
+99008 FORMAT ('OXIDANT NOT PERMITTED WHEN SPECIFYING 100% FUEL(main)') ! /,
 99009 FORMAT ('#',2x,20A12)
       END
       BLOCKDATA 

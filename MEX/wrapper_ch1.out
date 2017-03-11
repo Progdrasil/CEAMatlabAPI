@@ -2,8 +2,8 @@
 
 
  prob case=wrapper ro equilibrium
-  
-  ! iac problem
+ c
+ c
  o/f 3
  p,psia  350
  supar 4.84
