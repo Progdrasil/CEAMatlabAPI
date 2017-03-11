@@ -108,6 +108,12 @@ C     revord.F
 C     .F file needs to be preprocessed to generate .for equivalent
 C     
 #endif
+      ! subroutine mxSetField(pm, index, fieldname, pvalue)
+      !   mwPointer pm, pvalue
+      !   mwIndex index
+      !   character*(*) fieldname
+      !   return
+      ! end
 C-----------------------------------------------------------------------
 C     Gateway routine
       SUBROUTINE MexFunction(nlhs, plhs, nrhs, prhs)
@@ -125,6 +131,13 @@ C     Declarations
       mwPointer mxGetCell   
       mwPointer mxGetM, mxGetN
       INTEGER mxIsChar
+      mwPointer mxCreateStructArray
+      INTEGER*4 mxAddField
+      ! mwPointer mxSetField
+      !   mwPointer pm, pvalue
+      !   mwIndex index
+      !   character*(*) fieldname
+      ! end
 
         INTEGER inputStatus, status1, status2
 
@@ -138,6 +151,8 @@ C     Declarations
       mwSize, DIMENSION(50):: inputLn
       mwIndex i,j
       mwPointer exInp
+
+      mwPointer testStruct
 
 C-----------------------------------------------------------------------
       if (nrhs .LT. 1) then
@@ -192,7 +207,10 @@ C     The input must be a row vector.
      &        outputFile,exInp)
 
       ! set outputFile to MATLAB mexFunction Output
-      plhs(1) = MXCREATESTRING(outputFile)
+      plhs(1) = mxCreateStructArray(1,[1],1,['PinfP'])
+      testStruct = mxCreateStructArray(1,[1],4,['CHAMBER','THROAT',
+     &               'EXIT','EXIT'])
+      CALL mxSetField(plhs(1),1,'PinfP',testStruct)
 
 
       RETURN
