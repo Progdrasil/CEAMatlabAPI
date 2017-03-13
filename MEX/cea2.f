@@ -115,10 +115,18 @@ C
       !   return
       ! end
 C-----------------------------------------------------------------------
+      MODULE mexVars
+C     variables added for Matab Mex integration
+      mwPointer outputData
+      CHARACTER*500 errMsg
+      COMMON outputData,errMsg
+      END MODULE
 C     Gateway routine
       SUBROUTINE MexFunction(nlhs, plhs, nrhs, prhs)
 C     Declarations
+      USE mexVars
       IMPLICIT NONE
+      INCLUDE 'cea.inc'
       
 
       !mex Function arguments
@@ -134,6 +142,8 @@ C     Declarations
       mwPointer mxCreateStructArray
       INTEGER*4 mxAddField
       INTEGER*4 mxGetFieldNumber
+      mwPointer mxCreateDoubleMatrix
+      mwPointer mxGetPr
       ! mwPointer mxSetField
       !   mwPointer pm, pvalue
       !   mwIndex index
@@ -146,14 +156,14 @@ C     Declarations
       mwSize  maxbuf
       PARAMETER(maxbuf = 100)
       CHARACTER*100 inputPath, inputFile, outputFile
-      CHARACTER*132 tempStr,errMsg
+      CHARACTER*132 tempStr
       CHARACTER, DIMENSION(50,132) :: inputStr
       mwPointer pathLn,fileLn
       mwSize, DIMENSION(50):: inputLn
       mwIndex i,j,outStatus
       mwPointer exInp
-      mwPointer outputData
-
+      mwPointer testStruct,testArr,zPtr
+      REAL*8 z(3)
 
 C-----------------------------------------------------------------------
       if (nrhs .LT. 1) then
@@ -183,7 +193,7 @@ C     The input must be a row vector.
         inputStatus = MXGETSTRING(mxGetCell(prhs(1),i),
      &                        tempStr,inputLn(i))
         CALL STRINGARRAY(i,tempStr,inputStr,inputLn(i))
-        CALL mexPrintf('\n')
+        ! CALL mexPrintf('\n')
         if (inputStatus .ne. 0) then 
           call mexErrMsgTxt ('Error reading string.')
         endif
@@ -207,14 +217,14 @@ C     The input must be a row vector.
 
       ! call CEA
       CALL CEA(inputStr,inputLn,inputPath,pathLn,inputFile,fileLn,
-     &        outputFile,exInp,outputData)
+     &        outputFile,exInp)
 
       ! set outputFile to MATLAB mexFunction Output
       plhs(1) = outputData
       
     !   testStruct = mxCreateStructArray(1,[1],4,['CHAMBER','THROAT',
     !  &               'EXIT','EXIT'])
-    !   outStatus = mxAddField(plhs(1),'PinfP')
+    !   outStatus = mxAddField(outputData,'PinfP')
     !   IF (outStatus.EQ.-1) THEN
     !     CALL mexErrMsgIdAndTxt('CEA:MEX:output','new field doesnt work')
     !   ENDIF
@@ -225,23 +235,36 @@ C     The input must be a row vector.
     !   WRITE(errMsg,99001) outStatus
     !   CALL mexPrintf('\n the index for PinfP is: ')
     !   CALL mexPrintf(errMsg)
+    !   testArr = mxCreateDoubleMatrix(1,3,0)
+    !   zPtr = mxGetPr(testArr)
+    !   z(1) = 1
+    !   z(2) = 2
+    !   z(3) = 3
+    !   CALL mxCopyReal8ToPtr(z,zPtr,3)
+    !   CALL mxSetPr(testArr,zPtr)
+    !   CALL mxSetFieldByNumber(testStruct,1,1,testArr)
     !   ! CALL mxSetField(plhs(1),1,'PinfP',testStruct)
-    !   CALL mxSetFieldByNumber(plhs(1),4,outStatus,testStruct)
+    !   CALL mxSetFieldByNumber(outputData,1,outStatus,testStruct)
+
+    !   plhs(1) = outputData
+
 99001 FORMAT(I3)
 
       RETURN
       END
 C-----------------------------------------------------------------------
       SUBROUTINE STRINGARRAY(i,tempStr,inputStr,inputLn)
+      USE mexVars
       IMPLICIT NONE
-      
+      INCLUDE 'cea.inc'
+
       mwIndex i,j
       CHARACTER tempStr(*)
       CHARACTER, DIMENSION(50,132) :: inputStr
       mwSize inputLn
       DO 10 j = 1,inputLn
         inputStr(i,j) = tempStr(j)
-        CALL mexPrintf(inputStr(i,j))
+        ! CALL mexPrintf(inputStr(i,j))
 10    CONTINUE
       DO 20 j = inputLn+1,132
         inputStr(i,j) = ''
@@ -250,7 +273,8 @@ C-----------------------------------------------------------------------
       END
 C     Computational routine
       SUBROUTINE CEA(inputStr,inputLn,inputPath,pathLn,inputFile,
-     &               fileLn,outputFile,exInp,outputData)!inputPath,pathLn,
+     &               fileLn,outputFile,exInp)!inputPath,pathLn,
+      USE mexVars
       IMPLICIT NONE
       INCLUDE 'cea.inc'
       
@@ -258,7 +282,6 @@ C LOCAL VARIABLES
       CHARACTER*15 ensert(20)
       CHARACTER*200 infile,ofile,filePrim,pathPrim,thermoFile,transFile
       CHARACTER*196 prefix
-      CHARACTER(LEN=500) :: errMsg
       CHARACTER inputFile(*),outputFile(*),inputPath(*)
       CHARACTER, DIMENSION(50,132) :: inputStr
       LOGICAL caseok,ex,readok,inpop,outop
@@ -268,7 +291,7 @@ C LOCAL VARIABLES
       INTEGER INDEX,exInp,jline
       REAL*8 xi,xln
       REAL*8 DLOG
-      mwPointer outputData
+      ! mwPointer outputData
       SAVE caseok,ensert,ex,i,inc,infile,iof,j,n,ofile,prefix,readok, !saves variables for next time this subroutine is called
      &  xi,xln!,inputStr,inputLn
 
@@ -331,7 +354,6 @@ C LOCAL VARIABLES
       OPEN (IOSCH,STATUS='scratch',FORM='unformatted')! FIND OUT
       OPEN (IOTHM,FILE=thermoFile,FORM='unformatted')!open termodynamics library 
       OPEN (IOTRN,FILE=transFile,FORM='unformatted')!Open trans library (WHAT IS TRANS LIBRARY?)
-
       ! WRITE (IOOUT,99006) !make a seperation line in output
       ! WRITE (IOOUT,99007) !write authors and name of application in output
       ! WRITE (IOOUT,99006) !make another seperation line in output
@@ -347,8 +369,8 @@ C LOCAL VARIABLES
             DO i = 1,Nlm
               IF ( B0p(i,1).EQ.0..OR.B0p(i,2).EQ.0. ) THEN
                 WRITE(errMsg,99008)
-                CALL mexErrMsgIdAndTxt('CEA:Input:Oxidant',errMsg)
-                WRITE (IOOUT,99008) ! Error message
+                CALL mexWarnMsgIdAndTxt('CEA:Input:Oxidant',errMsg)
+                ! WRITE (IOOUT,99008) ! Error message
                 GOTO 200
               ENDIF
             ENDDO
@@ -396,13 +418,18 @@ C INITIAL ESTIMATES
               IF ( Prod(j).EQ.ensert(i) ) THEN
                 Npr = Npr + 1
                 Jcond(Npr) = j
-                IF ( .NOT.Short ) WRITE (IOOUT,99003) Prod(j)
+                IF ( .NOT.Short ) THEN
+                  WRITE (errMsg,99003) Prod(j)
+                  CALL mexPrintf(errMsg)
+                  CALL mexPrintf('\n')
+                  ! WRITE (IOOUT,99003) Prod(j)
+                ENDIF
                 GOTO 120
               ENDIF
             ENDDO
             WRITE(errMsg,99004) ensert(i)
             CALL mexWarnMsgIdAndTxt('CEA:Input:Missing',errMsg)
-            WRITE (IOOUT,99004) ensert(i) ! Warning handling
+            ! WRITE (IOOUT,99004 ) ensert(i) ! Warning handling
  120      CONTINUE
         ENDIF
         IF ( Rkt ) THEN
@@ -615,12 +642,12 @@ C
 C***********************************************************************
 C CHAPMAN-JOUGUET DETONATIONS.
 C***********************************************************************
+      USE mexVars
       IMPLICIT NONE
       INCLUDE 'cea.inc'
 C LOCAL VARIABLES
       CHARACTER*15 fdv,fg1,fh1,fhs1,fm1,fmm1,fpp1,frr1,ft1,ftt1
       CHARACTER*3 unit
-      CHARACTER(len=500)::errMsg
       INTEGER i,ii,iof,itr,j,mdv,mgam,mh,mmach,mp,mson,mt,mxx(8)
       INTEGER INDEX
       REAL*8 a11,a12,a21,a22,alam,alfa,amm,b1,b2,cpl(NCOL),d,gam,
@@ -682,7 +709,10 @@ C CALCULATE ENTHALPY FOR INITIAL ESTIMATE OF T2(TT AFTER EQLBRM)
             ii = 0
             tem = tt1 - .75*pp1/(Cpr(Npt)*Wmix)
             amm = Wm(Npt)/Wmix
-            IF ( Detdbg ) WRITE (IOOUT,99001) Tt! pass variable
+            IF ( Detdbg ) THEN
+
+              WRITE (IOOUT,99001) Tt! pass variable
+            ENDIF
 C LOOP FOR IMPROVING T2/T1 AND P2/P1 INITIAL ESTIMATE.
             DO ii = 1,3
               alfa = amm/tt1
@@ -2209,7 +2239,6 @@ C LOCAL VARIABLES
       CHARACTER*3 fmtl(3)
       CHARACTER*2 numg(24)
       CHARACTER*4 w1
-      CHARACTER(LEN=500):: errMsg
       INTEGER i,ich1,j,kcin,nb,nch1,nx,index
       INTEGER jline,exInp
       CHARACTER, DIMENSION(50,132) :: inputStr
@@ -2231,14 +2260,14 @@ C
       nch1 = 1
 C READ CHARACTERS, ONE AT A TIME
       IF ( jline.GT.exInp ) GOTO 500
-      CALL mexPrintf('\n')
+      ! CALL mexPrintf('\n')
       DO 10 index = 1,132
         ch1(index) = inputStr(jline,index)
-        CALL mexPrintf(ch1(index))
+        ! CALL mexPrintf(ch1(index))
 10    CONTINUE
-      WRITE(errMsg,99005) jline
-      CALL mexPrintf('\t')
-      CALL mexPrintf(errMsg)
+      ! WRITE(errMsg,99005) jline
+      ! CALL mexPrintf('\t')
+      ! CALL mexPrintf(errMsg)
       jline = jline + 1
       ! jline = jline + 1
 !       READ (IOINP,99001,END=500,ERR=500) ch1
@@ -2283,12 +2312,12 @@ C KEYWORD READ FOR NEXT DATASET. END PROCESSING
       ! ELSEIF ( jline.GT.exInp ) GOTO 500
       
       ELSEIF ( Ncin.EQ.1 ) THEN
-        WRITE(errMsg,99005) jline
-        CALL mexPrintf('\nbreaks at: ')
-        CALL mexPrintf(errMsg)
-        WRITE(errMsg,99005) exInp
-        CALL mexPrintf('\nexit is at at: ')
-        CALL mexPrintf(errMsg)
+        ! WRITE(errMsg,99005) jline
+        ! CALL mexPrintf('\nbreaks at: ')
+        ! CALL mexPrintf(errMsg)
+        ! WRITE(errMsg,99005) exInp
+        ! CALL mexPrintf('\nexit is at at: ')
+        ! CALL mexPrintf(errMsg)
         WRITE (IOOUT,99003) ! error
         GOTO 500
       ENDIF

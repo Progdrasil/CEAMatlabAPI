@@ -119,3 +119,6 @@ C
       REAL*8 Coneql(NCOL),Confro(NCOL),Cpeql(NCOL),Cpfro(NCOL),
      &       Preql(NCOL),Prfro(NCOL),Vis(NCOL)
       COMMON /TRPTS / Coneql,Confro,Cpeql,Cpfro,Preql,Prfro,Vis
+C     variables added for Matab Mex integration
+      ! CHARACTER*200 errMsg
+      ! COMMON errMsg
