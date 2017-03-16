@@ -166,6 +166,8 @@ C     Declarations
       REAL*8 z(3)
 
 C-----------------------------------------------------------------------
+      CALL mexPrintf('Subroutine MexFunction called \n')
+
       if (nrhs .LT. 1) then
          call mexErrMsgTxt ('One input required.')
       elseif (nlhs .gt. 1) then
@@ -262,6 +264,9 @@ C-----------------------------------------------------------------------
       CHARACTER tempStr(*)
       CHARACTER, DIMENSION(50,132) :: inputStr
       mwSize inputLn
+
+      CALL mexPrintf('Subroutine STRINGARRAY called \n')
+
       DO 10 j = 1,inputLn
         inputStr(i,j) = tempStr(j)
         ! CALL mexPrintf(inputStr(i,j))
@@ -294,6 +299,8 @@ C LOCAL VARIABLES
       ! mwPointer outputData
       SAVE caseok,ensert,ex,i,inc,infile,iof,j,n,ofile,prefix,readok, !saves variables for next time this subroutine is called
      &  xi,xln!,inputStr,inputLn
+
+      CALL mexPrintf('Subroutine CEA called \n')
 
       filePrim = ''
       DO 10 inputIndex = 1,fileLn
@@ -547,6 +554,9 @@ C LOCAL VARIABLES
 C
       DATA cx/2*0.,1.D0,.5D0,.6666666666666667D0,.75D0,.8D0/
       DATA hcx(3)/1.D0/
+
+      CALL mexPrintf('Subroutine CPHS called \n')
+
       k = 1
       IF ( Tt.GT.Tg(2) ) k = 2
       IF ( Tt.GT.Tg(3) ) k = 3
@@ -667,6 +677,10 @@ C
       DATA ft1/'T1, K'/,fh1/'H1, CAL/G'/,fhs1/'H1, KJ/KG'/,
      &     fm1/'M1, (1/n) '/,fg1/'GAMMA1'/,fpp1/'P/P1'/,ftt1/'T/T1'/,
      &     fmm1/'M/M1'/,frr1/'RHO/RHO1'/,fdv/'DET VEL,M/SEC'/
+
+      CALL mexPrintf('Subroutine DETON called \n')
+
+
       iof = 0
       Eql = .TRUE.
       IF ( T(1).EQ.0. ) THEN
@@ -920,6 +934,9 @@ C LOCAL VARIABLES
 C
       DATA frmt/'(1H ',',A15',',','9X,','13(F','6.4,','I2,','1X))'/
       DATA fmix/'I3,','6.4,','I2,','9X,','5.3,'/
+
+      CALL mexPrintf('Subroutine EFMT called \n')
+
       frmt(6) = fmix(2)
       frmt(7) = fmix(3)
       j1 = 1
@@ -973,6 +990,9 @@ C LOCAL VARIABLES
      &  siz9,sizeg,sum,sum1,szgj,tem,tmelt,tsize,ween,xi,xln,xsize,xx
 C
       DATA smalno/1.E-6/,smnol/ - 13.815511/
+
+      CALL mexPrintf('Subroutine EQLBRM called \n')
+
       ixsing = 0
       lsing = 0
       jsw = 0
@@ -1913,6 +1933,8 @@ C LOCAL VARIABLES
       REAL*8 dlnt,dlpm
       SAVE dlnt,dlpm,i,inc,iter,j,k,nnn
 C
+      CALL mexPrintf('Subroutine FROZEN called \n')
+
       Convg = .FALSE.
       Tln = DLOG(Tt)
       dlpm = DLOG(Pp*Wm(Nfz))
@@ -1990,6 +2012,9 @@ C LOCAL VARIABLES
       SAVE coefx,i,imatp1,j,k,nn,nnp1,tmp
 C
       DATA bigno/1.E+25/
+
+      CALL mexPrintf('Subroutine GAUSS called \n')
+
 C BEGIN ELIMINATION OF NNTH VARIABLE
       imatp1 = Imat + 1
       DO nn = 1,Imat
@@ -2089,6 +2114,8 @@ C LOCAL VARIABLES
       SAVE bb,date,el,enj,er,i,icf,ifaz,itot,j,k,l,m,n,nall,nint,ntgas,
      &  ntot,sj,sub,t1,t2,tem,thermo,tsave
 C
+      CALL mexPrintf('Subroutine HCALC called \n')
+
       tsave = Tt
       Tm = 0.
       IF ( Pp.GT.0. ) Tm = DLOG(Pp*Wmix)
@@ -2247,6 +2274,9 @@ C
       DATA nums/'+','-','0','1','2','3','4','5','6','7','8','9','.'/
       DATA numg/'1','2','3','4','5','6','7','8','9','10','11','12','13',
      &     '14','15','16','17','18','19','20','21','22','23','24'/
+
+      CALL mexPrintf('Subroutine INFREE called \n')
+
       Ncin = 1
       Lcin(1) = 0
       kcin = 0
@@ -2414,6 +2444,9 @@ C
       DATA uc/'ABCDEFGHIJKLMNOPQRSTUVWXYZ'/ !initialize uppercase
       DATA lc/'abcdefghijklmnopqrstuvwxyz'/ !initialize lowercase
       WRITE (IOOUT,99001) ! header empty line
+
+      CALL mexPrintf('Subroutine INPUT called \n')
+
 C     Initialize variables
       Caseok = .TRUE.
       Nonly = 0
@@ -3072,6 +3105,8 @@ C LOCAL VARIABLES
       REAL*8 energyl,f,h,ss,sss,term,term1
       SAVE energyl,f,h,i,iq,iq2,iq3,isym,j,k,kk,kmat,ss,sss,term,term1
 C
+      CALL mexPrintf('Subroutine MATRIX called \n')
+
       iq = Nlm + Npr
       Iq1 = iq + 1
       iq2 = Iq1 + 1
@@ -3215,6 +3250,8 @@ C LOCAL VARIABLES
       REAL*8 DABS,DLOG
       SAVE assval,bigb,bratio,dbi,i,j,smalb,tem,v1,v2
 C
+      CALL mexPrintf('Subroutine NEWOF called \n')
+
       IF ( .NOT.Short ) WRITE (IOOUT,99001) Oxfl ! variable
       Eqrat = 0.
       tem = Oxfl + 1.
@@ -3322,6 +3359,9 @@ C
       EQUIVALENCE (mxx(23),mcondf)
       EQUIVALENCE (mxx(24),mpnf)
       WRITE (IOOUT,99001) Case !variable
+
+      CALL mexPrintf('Subroutine OUT1 called \n')
+
       IF ( Moles ) THEN
         WRITE (IOOUT,99002) '   MOLES   ' !header
         IF ( .NOT.Siunit ) WRITE (IOOUT,99003) ! header
@@ -3699,6 +3739,8 @@ C LOCAL VARIABLES
      &  kk,kr,l,n,nall,nint,nj,ntgas,ntot,pcwt,rcf,rcoefs,rm,sub,t1,t2,
      &  wdone
 C
+      CALL mexPrintf('Subroutine REACT called \n')
+
       DO k = 1,2
         wdone(k) = .FALSE.
         Wp(k) = 0.
@@ -3975,6 +4017,9 @@ C
       EQUIVALENCE (mxx(6),mivac)
       EQUIVALENCE (mxx(7),misp)
       DATA exit/11*'EXIT'/
+
+      CALL mexPrintf('Subroutine RKTOUT called \n')
+
       IF ( .NOT.Eql ) THEN
         WRITE (IOOUT,99004) ! header
         IF ( Nfz.GT.1 ) WRITE (IOOUT,99005) Nfz ! header
@@ -4195,6 +4240,9 @@ C LOCAL VARIABLES
      &  thi,tmelt,usq
 C
       DATA a1l/ - 1.26505/,b1/1.0257/,c1/ - 1.2318/,pa/1.E05/
+
+      CALL mexPrintf('Subroutine ROCKET called \n')
+
       iplte = Iplt
       isup1 = 1
       App(1) = 1.
@@ -4785,6 +4833,8 @@ C LOCAL VARIABLES
       SAVE b,bin,date,el,i,i5,ifaz,ii,ir,itot,j,jj,jk,k,lineb,nall,ne,
      &  nint,npure,nrec,ntgas,ntot,pure,spece,sub,t1,t2,thermo,trdata
 C
+      CALL mexPrintf('Subroutine SEARCH called \n')
+
       Nc = 0
       ne = 0
       DO i = 1,Nlm
@@ -5026,6 +5076,8 @@ C LOCAL VARIABLES
       REAL*8 DEXP
       SAVE j,lsav,tsave
 C
+      CALL mexPrintf('Subroutine SETEN called \n')
+
       IF ( Isv.LT.0 ) THEN
 C FIRST T--SAVE COMPOSITIONS FOR FUTURE POINTS WITH THIS T
         Isv = -Isv
@@ -5106,6 +5158,8 @@ C LOCAL VARIABLES
      &  mis,mu12rt,n,p1,p21,p21l,p2p1,pmn,refl,rho12,rho52,rrho,seql,sg,
      &  srefl,t1,t21,t21l,t2t1,ttmax,u1u2,uis,utwo,uu,wmx,ww
 C
+      CALL mexPrintf('Subroutine SHCK called \n')
+
       IF ( Trace.EQ.0. ) Trace = 5.E-9
       Tp = .TRUE.
       Cpmix = 0.
@@ -5506,6 +5560,9 @@ C
       EQUIVALENCE (Hp,Uv)
       EQUIVALENCE (Tp,Tv)
       EQUIVALENCE (Sp,Sv)
+
+      CALL mexPrintf('Subroutine THERMP called \n')
+      
       Eql = .TRUE.
       DO 100 iof = 1,Nof
         Oxfl = Oxf(iof)
@@ -5589,6 +5646,8 @@ C LOCAL VARIABLES
      &  prop,qc,ratio,setx,stcf,stcoef,te,testen,testot,total,trc,wmols,
      &  wmred,xsel,xss
 C
+      CALL mexPrintf('Subroutine TRANIN called \n')
+
       IF ( .NOT.Eql ) THEN
         IF ( .NOT.Shock ) THEN
           IF ( .NOT.setx ) THEN
@@ -5869,6 +5928,8 @@ C LOCAL VARIABLES
       SAVE cpreac,delh,gmat,i,i1,j,jj,k,m,mm,nlmm,nmm,phi,psi,reacon,
      &  rtpd,stx,stxij,sumc,sumv,wtmol,xskm
 C
+      CALL mexPrintf('Subroutine TRANP called \n')
+
       CALL TRANIN
 C CALCULATE VISCOSITY AND FROZEN THERMAL CONDUCTIVITY
       nmm = Nm - 1
@@ -6078,6 +6139,8 @@ C LOCAL VARIABLES
      &       tgl(4),thermo(9,3),tinf,tl(2),ttl,tx
       REAL*8 DBLE,DLOG
 C
+      CALL mexPrintf('Subroutine UTHERM called \n')
+
       ngl = 0
       ns = 0
       nall = 0
@@ -6288,6 +6351,9 @@ C LOCAL VARIABLES
       REAL*8 cc,tc(36),tcin(6),trcoef(6,3,2),vvl
 C
       EQUIVALENCE (tc(1),trcoef(1,1,1))
+
+      CALL mexPrintf('Subroutine UTRAN called \n')
+
       ns = 0
       REWIND IOSCH
  100  DO i = 1,36
@@ -6351,6 +6417,8 @@ C LOCAL VARIABLES
       REAL*8 DABS
       SAVE i,k,vi
 C
+      CALL mexPrintf('Subroutine VARFMT called \n')
+
       DO i = 1,Npt
         vi = DABS(Vx(i))
         k = 2*i + 3
