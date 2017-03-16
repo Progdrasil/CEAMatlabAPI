@@ -2,17 +2,48 @@ classdef CEA < handle
 
     properties (SetAccess = public)
         data;
-        ioinp;
+        ioinp = 'No inputs created';
         input;
+        % variables for Input creation
+        OF;
+        pressure;
+        presUnit = 'psia';
+        supar;
+        PcPe;
+
     end
     
-    methods 
+    properties (SetAccess = ?input_class)
+        fuel;
+        fuelWt;
+        fuelTemp;
+
+        oxid;
+        oxidWt;
+        oxidTemp;
+    end
+    methods
         function this = CEA()
             this.input = input_class(this);
         end
-        function data = run(obj,inputFile)
-            currentpath = which('CEA.m');
-            [pathstr,~,~] = fileparts(currentpath);
+        function data = run(obj)
+            try
+                thermoFind = which('thermo.lib');
+                [thermoPath,~,~] = fileparts(thermoFind);
+            catch
+                error('Could not find thermo.lib in current Path')
+            end
+            try
+                transFind = which('trans.lib');
+                [transPath,~,~] = fileparts(transFind);
+            catch
+                error('Could not find trans.lib in current Path')
+            end
+            if (thermoPath ~= transPath)
+                error('thermo.lib and trans.lib must be in the same directory')
+            end
+
+            inputFile = 'wrapper'
             if ismac
                 inputFile = strcat('/',inputFile);
             elseif isunix
@@ -22,42 +53,44 @@ classdef CEA < handle
             else
                 error('Platform not supported')
             end  
-            data = cea2(inputFile,pathstr);
+            data = cea2(obj.ioinp,inputFile,thermoPath);
             obj.data
             return;
         end
-%         function input = rocket(obj, OF,pressure,presUnit, supar, PcPe, fuel, fuelWt, fuelTemp, oxid, oxidWt, oxidTemp)
-%             % examples
-%             % input = test.rocket( 3 , 350, 'psia', 4.84 , 23.8 , 'paraffin' , 100, 298.15 , 'N2O', 100, 298.15)
-%             % input = test.rocket( 3 , 350 ,'psia', 4.84 , 23.8 , {'paraffin' 'CH4' 'RP-1'} , [50 25 25], [298.15 298.15 298.15], {'N2O' 'O2(L)'}, [75 25],[298.15 90.1])
-%             input = sprintf('prob case=wrapper ro equilibrium');
-%             input = strcat(input,sprintf('\n\n ! iac problem'));
-%             input = strcat(input,sprintf('\no/f %g',OF));   %oxidiser to fuel ratio
-%             input = strcat(input,sprintf('\np,%s  %g',presUnit,pressure)); %pressure
-%             input = strcat(input,sprintf('\nsupar %g',supar));  %supersonic area ratio
-%             input = strcat(input,sprintf('\npip %g',PcPe));    %Pc/Pe
-%             input = strcat(input,sprintf('\nreac'));
-%             if length(fuelWt)>1
-%                 for i = 1:length(fuelWt)
-%                     input = strcat(input,sprintf('\n  fuel  %s wt%%=%6.3f t,k=%6.2f',fuel{i},fuelWt(i),fuelTemp(i)));
-%                 end
-%             else
-%                 input = strcat(input,sprintf('\n  fuel  %s wt%%=%g. t,k=%6.2f',fuel,fuelWt,fuelTemp));
-%             end
-%             if length(oxidWt)>1
-%                 for i = 1:length(oxidWt)
-%                     input = strcat(input,sprintf('\n  oxid  %s wt%%=%6.3f t,k=%6.2f',oxid{i},oxidWt(i),oxidTemp(i)));
-%                 end
-%             else
-%                 input = strcat(input,sprintf('\n  oxid  %s wt%%=%g. t,k=%6.2f',oxid,oxidWt,oxidTemp));
-%             end
-%             input = strcat(input,sprintf('\noutput    short'));
-%             input = strcat(input,sprintf('\noutput trace=1e-5'));
-%             input = strcat(input,sprintf('\nend'));
-%             
-%             obj.input = input;
-%             return;
-%         end
+        function setFuel(obj, fuels, fuelWeights, fuelTemps)
+            if (iscellstr(fuels))
+                if (length(fuelWeights) == length(fuelTemps) && length(fuelTemps) == length(fuels))
+                    obj.fuel = fuels;
+                    obj.fuelWt = fuelWeights;
+                    obj.fuelTemp = fuelTemps;
+                else
+                    error ('The size of the fuels cell, fuelWeights array and fuelTemps array must match')
+                end
+            elseif (length(fuelWeights) == 1 && length(fuelTemps) == 1)
+                obj.fuel = fuels;
+                obj.fuelWt = fuelWeights;
+                obj.fuelTemp = fuelTemps;
+            else
+                error ('if there is only one fuel, the fuelWeights and fuelTemps must be scalar')
+            end
+        end
+        function setOxid(obj, oxids, oxidWeights, oxidTemps)
+            if (iscellstr(oxids))
+                if (length(oxidWeights) == length(oxidTemps) && length(oxidTemps) == length(oxids))
+                    obj.oxid = oxids;
+                    obj.oxidWt = oxidWeights;
+                    obj.oxidTemp = oxidTemps;
+                else
+                    error ('The size of the oxids cell, oxidWeights array and oxidTemps array must match')
+                end
+            elseif (length(oxidWeights) == 1 && length(oxidTemps) == 1)
+                obj.oxid = oxids;
+                obj.oxidWt = oxidWeights;
+                obj.oxidTemp = oxidTemps;
+            else
+                error ('if there is only one oxid, the oxidWeights and oxidTemps must be scalar')
+            end
+        end
 
     end
     
