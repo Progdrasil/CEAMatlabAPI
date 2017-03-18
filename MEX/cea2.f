@@ -166,7 +166,7 @@ C     Declarations
       REAL*8 z(3)
 
 C-----------------------------------------------------------------------
-      CALL mexPrintf('Subroutine MexFunction called \n')
+      ! CALL mexWarnMsgTxt('Subroutine MexFunction called \n')
 
       if (nrhs .LT. 1) then
          call mexErrMsgTxt ('One input required.')
@@ -265,7 +265,7 @@ C-----------------------------------------------------------------------
       CHARACTER, DIMENSION(50,132) :: inputStr
       mwSize inputLn
 
-      CALL mexPrintf('Subroutine STRINGARRAY called \n')
+      ! CALL mexWarnMsgTxt('Subroutine STRINGARRAY called \n')
 
       DO 10 j = 1,inputLn
         inputStr(i,j) = tempStr(j)
@@ -300,7 +300,7 @@ C LOCAL VARIABLES
       SAVE caseok,ensert,ex,i,inc,infile,iof,j,n,ofile,prefix,readok, !saves variables for next time this subroutine is called
      &  xi,xln!,inputStr,inputLn
 
-      CALL mexPrintf('Subroutine CEA called \n')
+      ! CALL mexWarnMsgTxt('Subroutine CEA called \n')
 
       filePrim = ''
       DO 10 inputIndex = 1,fileLn
@@ -555,7 +555,7 @@ C
       DATA cx/2*0.,1.D0,.5D0,.6666666666666667D0,.75D0,.8D0/
       DATA hcx(3)/1.D0/
 
-      CALL mexPrintf('Subroutine CPHS called \n')
+      ! CALL mexWarnMsgTxt('Subroutine CPHS called \n')
 
       k = 1
       IF ( Tt.GT.Tg(2) ) k = 2
@@ -678,7 +678,7 @@ C
      &     fm1/'M1, (1/n) '/,fg1/'GAMMA1'/,fpp1/'P/P1'/,ftt1/'T/T1'/,
      &     fmm1/'M/M1'/,frr1/'RHO/RHO1'/,fdv/'DET VEL,M/SEC'/
 
-      CALL mexPrintf('Subroutine DETON called \n')
+      CALL mexWarnMsgTxt('Subroutine DETON called \n')
 
 
       iof = 0
@@ -935,7 +935,7 @@ C
       DATA frmt/'(1H ',',A15',',','9X,','13(F','6.4,','I2,','1X))'/
       DATA fmix/'I3,','6.4,','I2,','9X,','5.3,'/
 
-      CALL mexPrintf('Subroutine EFMT called \n')
+      ! CALL mexWarnMsgTxt('Subroutine EFMT called \n')
 
       frmt(6) = fmix(2)
       frmt(7) = fmix(3)
@@ -967,6 +967,7 @@ C
 C***********************************************************************
 C CALCULATE EQUILIBRIUM COMPOSITION AND PROPERTIES.
 C***********************************************************************
+      USE mexVars
       IMPLICIT NONE
       INCLUDE 'cea.inc'
 C LOCAL VARIABLES
@@ -991,7 +992,7 @@ C LOCAL VARIABLES
 C
       DATA smalno/1.E-6/,smnol/ - 13.815511/
 
-      CALL mexPrintf('Subroutine EQLBRM called \n')
+      ! CALL mexWarnMsgTxt('Subroutine EQLBRM called \n')
 
       ixsing = 0
       lsing = 0
@@ -1038,8 +1039,11 @@ C
             Jcond(k) = j + kg
             En(j+kg,Npt) = En(j,Npt)
             En(j,Npt) = 0.
-            IF ( Prod(j).NE.Prod(j+kg).AND..NOT.Short ) 
-     &           WRITE (IOOUT,99023) Prod(j),Prod(j+kg) ! variables
+            IF ( Prod(j).NE.Prod(j+kg).AND..NOT.Short ) THEN
+              WRITE (errMsg,99023) Prod(j),Prod(j+kg) ! variables
+              CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:PHASE',errMsg)
+              ! WRITE (IOOUT,99023) Prod(j),Prod(j+kg) ! variables
+            ENDIF
           ENDIF
           GOTO 300
         ELSEIF ( kc.GE.Nc.OR.Ifz(kc+1).LE.Ifz(kc) ) THEN
@@ -1051,7 +1055,9 @@ C
         k = 1
         GOTO 100
       ENDIF
-      WRITE (IOOUT,99028) Prod(j) ! variables
+      WRITE (errMsg,99028) Prod(j) ! variables
+      CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:PHASE',errMsg)
+      ! WRITE (IOOUT,99028) Prod(j) ! variables
       En(j,Npt) = 0.D0
       Enln(j) = 0.D0
       Deln(j) = 0.D0
@@ -1081,8 +1087,11 @@ C
       lelim = 0
       lz = ls
       IF ( Ions ) lz = ls - 1
-      IF ( Npt.EQ.1.AND..NOT.Shock.AND..NOT.Short ) WRITE (IOOUT,99001) !variables
-     &     (Elmt(i),i=1,Nlm)
+      IF ( Npt.EQ.1.AND..NOT.Shock.AND..NOT.Short ) THEN
+        WRITE (errMsg,99001) (Elmt(i),i=1,Nlm)!variables
+        CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:ITN',errMsg)
+        ! WRITE (IOOUT,99001) (Elmt(i),i=1,Nlm)!variables
+      ENDIF
       IF ( Debug(Npt) ) THEN
         DO i = 1,Nlm
           cmp(i) = Elmt(i)
@@ -1108,22 +1117,38 @@ C BEGIN ITERATION
       IF ( Convg ) Imat = Imat - 1
       IF ( Debug(Npt) ) THEN
         IF ( .NOT.Convg ) THEN
-          WRITE (IOOUT,99004) numb ! variable
+          WRITE (errMsg,99004) numb ! variable
+          CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:ITMAT',errMsg)
+          ! WRITE (IOOUT,99004) numb ! variable
         ELSE
-          IF ( .NOT.Pderiv ) WRITE (IOOUT,99002) ! header
-          IF ( Pderiv ) WRITE (IOOUT,99003) ! header
+          IF ( .NOT.Pderiv ) THEN
+            WRITE (errMsg,99002) ! header
+            CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:dTMAT',errMsg)
+            ! WRITE (IOOUT,99002) ! header
+          ENDIF
+          IF ( Pderiv ) THEN
+            WRITE (errMsg,99003) ! header
+            CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:dPMAT',errMsg)
+            ! WRITE (IOOUT,99003) ! header
+          ENDIF
         ENDIF
         kmat = Imat + 1
         DO i = 1,Imat
-          WRITE (IOOUT,99006) (G(i,k),k=1,kmat) ! variables
+          WRITE (errMsg,99006) (G(i,k),k=1,kmat) ! variables
+          CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:mexUndef',errMsg)
+          ! WRITE (IOOUT,99006) (G(i,k),k=1,kmat) ! variables
         ENDDO
       ENDIF
       Msing = 0
       CALL GAUSS
       IF ( Msing.EQ.0 ) THEN
         IF ( Debug(Npt) ) THEN
-          WRITE (IOOUT,99005) (cmp(k),k=1,le) ! variables
-          WRITE (IOOUT,99006) (X(i),i=1,Imat) ! variables
+          WRITE (errMsg,99005) (cmp(k),k=1,le) ! variables
+          CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:SOL',errMsg)
+          ! WRITE (IOOUT,99005) (cmp(k),k=1,le) ! variables
+          WRITE (errMsg,99006) (X(i),i=1,Imat) ! variables
+          CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:mexUndef',errMsg)
+          ! WRITE (IOOUT,99006) (X(i),i=1,Imat) ! variables
         ENDIF
         IF ( .NOT.Convg ) THEN
 C OBTAIN CORRECTIONS TO THE ESTIMATES
@@ -1186,18 +1211,31 @@ C CALCULATE CONTROL FACTOR,AMBDA
           ENDIF
           IF ( Debug(Npt) ) THEN
 C INTERMEDIATE OUTPUT
-            WRITE (IOOUT,99011) Tt,Enn,Ennl,Pp,Tm,ambda ! variables
+            WRITE (errMsg,99011) Tt,Enn,Ennl,Pp,Tm,ambda ! variables
+            CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:mexUndef',errMsg)
+            ! WRITE (IOOUT,99011) Tt,Enn,Ennl,Pp,Tm,ambda ! variables
             IF ( ambda.NE.1.D0 ) THEN
               amb = 'ENN'
               IF ( DABS(X(iq2)).GT.DABS(X(Iq1)) ) amb = 'TEMP'
               IF ( ilamb.NE.0 ) amb = Prod(ilamb)
-              WRITE (IOOUT,99012) amb ! variables
+              WRITE (errMsg,99012) amb ! variables
+              CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:AMBDA',errMsg)
+              ! WRITE (IOOUT,99012) amb ! variables
             ENDIF
-            IF ( Vol ) WRITE (IOOUT,99013) Vv*.001D0 ! variables
-            WRITE (IOOUT,99014) ! variables
+            IF ( Vol ) THEN
+              WRITE (errMsg,99013) Vv*.001D0 ! variables
+              CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:VOLUME',errMsg)
+              ! WRITE (IOOUT,99013) Vv*.001D0 ! variables
+            ENDIF
+            WRITE (errMsg,99014) ! variables
+            CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:mexUndef',errMsg)
+            ! WRITE (IOOUT,99014) ! variables
             DO j = 1,Ngc
-              WRITE (IOOUT,99015) Prod(j),En(j,Npt),Enln(j),Deln(j), ! variables
+              WRITE (errMsg,99015) Prod(j),En(j,Npt),Enln(j),Deln(j), ! variables
      &                       H0(j),S(j),H0(j) - S(j),Mu(j) 
+              CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:mexUndef',errMsg)
+    !           WRITE (IOOUT,99015) Prod(j),En(j,Npt),Enln(j),Deln(j), ! variables
+    !  &                       H0(j),S(j),H0(j) - S(j),Mu(j) 
             ENDDO
           ENDIF
 C APPLY CORRECTIONS TO ESTIMATES
@@ -1264,13 +1302,17 @@ C CHECK ON REMOVING IONS
           ENDIF
 C TEST FOR CONVERGENCE
  560      IF ( numb.GT.maxitn ) THEN
-            WRITE (IOOUT,99019) maxitn,Npt !variables
+            WRITE (errMsg,99019) maxitn,Npt !variables
+            CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:CONV',errMsg)
+            ! WRITE (IOOUT,99019) maxitn,Npt !variables
             IF ( Nc.EQ.0.OR.i2many ) GOTO 1500
             i2many = .TRUE.
             IF ( .NOT.Hp.OR.Npt.NE.1.OR.Tt.GT.100. ) THEN
               IF ( Npr.NE.1.OR.Enn.GT.1.E-4 ) GOTO 1500
 C HIGH TEMPERATURE, INCLUDED CONDENSED CONDITION
-              WRITE (IOOUT,99020) ! header
+              WRITE (errMsg,99020) ! header
+              CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:TEST',errMsg)
+              ! WRITE (IOOUT,99020) ! header
               Enn = .1
               Ennl = -2.3025851
               Sumn = Enn
@@ -1285,7 +1327,9 @@ C HIGH TEMPERATURE, INCLUDED CONDENSED CONDITION
               k = 1
               GOTO 1000
             ELSE
-              WRITE (IOOUT,99008) ! warning
+              WRITE (errMsg,99008) ! warning
+              CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:LOWTEMP',errMsg)
+              ! WRITE (IOOUT,99008) ! warning
               GOTO 1500
             ENDIF
           ELSE
@@ -1865,60 +1909,62 @@ C SWITCH ORDER OF MSING AND NLM COMPONENTS
       Nlm = ls
       IF ( Npr.GT.0 ) Gonly = .FALSE.
       RETURN
-99001 FORMAT (/' POINT ITN',6X,'T',10X,4(A4,8X)/(18X,5(A4,8X)))
-99002 FORMAT (/' T DERIV MATRIX')
-99003 FORMAT (/' P DERIV MATRIX')
-99004 FORMAT (/' ITERATION',I3,6X,'MATRIX ')
-99005 FORMAT (/' SOLUTION VECTOR',/,6x,5A15/8X,5A15)
+99001 FORMAT (' POINT ITN',6X,'T',10X,4(A4,8X),'\n',(18X,5(A4,8X)))
+99002 FORMAT (' T DERIV MATRIX')
+99003 FORMAT (' P DERIV MATRIX')
+99004 FORMAT (' ITERATION',I3,6X,'MATRIX ')
+99005 FORMAT (' SOLUTION VECTOR','\n',6x,5A15,'\n',8X,5A15)
 99006 FORMAT (3X,5E15.6)
-99007 FORMAT (/' DERIVATIVE MATRIX SINGULAR (EQLBRM)')
-99008 FORMAT (/' LOW TEMPERATURE IMPLIES A CONDENSED SPECIES SHOULD HA',
+99007 FORMAT (' DERIVATIVE MATRIX SINGULAR (EQLBRM)')
+99008 FORMAT (' LOW TEMPERATURE IMPLIES A CONDENSED SPECIES SHOULD HA',
      &        'VE BEEN INSERTED,',
-     &        /' RESTART WITH insert DATASET (EQLBRM)')
-99009 FORMAT (/' SINGULAR MATRIX, ITERATION',I3,'  VARIABLE',I3,
+     &        '\n RESTART WITH insert DATASET (EQLBRM)')
+99009 FORMAT (' SINGULAR MATRIX, ITERATION',I3,'  VARIABLE',I3,
      &        '(EQLBRM)')
-99010 FORMAT (/' WARNING!! POINT',I3,
-     &        ' USES A REDUCED SET OF COMPONENTS',/
+99010 FORMAT (' WARNING!! POINT',I3,
+     &        ' USES A REDUCED SET OF COMPONENTS\n',
      &       ' SPECIES CONTAINING THE ELIMINATED COMPONENT ARE OMITTED.'
-     &       ,/
+     &       ,'\n',
      &   ' IT MAY BE NECESSARY TO RERUN WITH INSERTED CONDENSED SPECIES'
-     &   ,/' CONTAINING COMPONENT ',A8,'(EQLBRM)')
-99011 FORMAT (/' T=',E15.8,' ENN=',E15.8,' ENNL=',E15.8,' PP=',E15.8,
-     &        /' LN P/N=',E15.8,' AMBDA=',E15.8)
-99012 FORMAT (/' AMBDA SET BY ',A16)
+     &   ,'\n CONTAINING COMPONENT ',A8,'(EQLBRM)')
+99011 FORMAT (' T=',E15.8,' ENN=',E15.8,' ENNL=',E15.8,' PP=',E15.8,
+     &        '\n LN P/N=',E15.8,' AMBDA=',E15.8)
+99012 FORMAT (' AMBDA SET BY ',A16)
 99013 FORMAT (' VOLUME=',E15.8,'CC/G')
-99014 FORMAT (/24X,'Nj',12X,'LN Nj',8X,'DEL LN Nj',6X,'H0j/RT',/,41X,
+99014 FORMAT (24X,'Nj',12X,'LN Nj',8X,'DEL LN Nj',6X,'H0j/RT','\n',41X,
      &        'S0j/R',10X,' G0j/RT',8X,' Gj/RT')
-99015 FORMAT (1X,A16,4E15.6,/35x,3E15.6)
-99016 FORMAT (/' ELECTRON BALANCE ITER NO. =',I4,'  DELTA PI =',E14.7)
-99017 FORMAT (/' DID NOT CONVERGE ON ELECTRON BALANCE (EQLBRM)')
-99018 FORMAT (/' DELTA S/R =',E15.8)
-99019 FORMAT (/,I4,' ITERATIONS DID NOT SATISFY CONVERGENCE',/,15x,
+99015 FORMAT (1X,A16,4E15.6,'\n',35x,3E15.6)
+99016 FORMAT (' ELECTRON BALANCE ITER NO. =',I4,'  DELTA PI =',E14.7)
+99017 FORMAT (' DID NOT CONVERGE ON ELECTRON BALANCE (EQLBRM)')
+99018 FORMAT (' DELTA S/R =',E15.8)
+99019 FORMAT (I4,' ITERATIONS DID NOT SATISFY CONVERGENCE','\n',15x,
      &        ' REQUIREMENTS FOR THE POINT',I5,' (EQLBRM)')
-99020 FORMAT (/' TRY REMOVING CONDENSED SPECIES (EQLBRM)')
-99021 FORMAT (/' POINT ITN',6X,'T',10X,4A12/(18X,5A12))
-99022 FORMAT (I4,I5,5F12.3,/(12X,5F12.3))
+99020 FORMAT (' TRY REMOVING CONDENSED SPECIES (EQLBRM)')
+99021 FORMAT (' POINT ITN',6X,'T',10X,4A12,'\n',(18X,5A12))
+99022 FORMAT (I4,I5,5F12.3,'\n',(12X,5F12.3))
 99023 FORMAT (' PHASE CHANGE, REPLACE ',A16,'WITH ',A16)
-99024 FORMAT (/1X,A15,2F10.3,3X,E15.7)
+99024 FORMAT (1X,A15,2F10.3,3X,E15.7)
 99025 FORMAT (' [G0j-SUM(Aij*PIi)]/Mj =',E15.7,9X,'MAX NEG DELTA G =',
      &        E15.7)
-99026 FORMAT (/' REINSERTION OF ',A16,' LIKELY TO CAUSE SINGULARITY,',
+99026 FORMAT (' REINSERTION OF ',A16,' LIKELY TO CAUSE SINGULARITY,',
      &        '(EQLBRM)')
 99027 FORMAT (' ADD ',A16)
 99028 FORMAT (' REMOVE ',A16)
-99029 FORMAT (/' NEW COMPONENTS')
-99030 FORMAT (/2x,6A12)
-99031 FORMAT (/' WARNING!  RESULTS MAY BE WRONG FOR POINT',I3,' DUE TO',
-     &        /' LOW MOLE FRACTION OF GASES (',E15.8,') (EQLBRM)')
-99032 FORMAT (/' POINT=',I3,3X,'P=',E13.6,3X,'T=',E13.6,/3X,'H/R=',
-     &        E13.6,3X,'S/R=',E13.6,/3X,'M=',E13.6,3X,'CP/R=',E13.6,3X,
-     &        'DLVPT=',E13.6,/3X,'DLVTP=',E13.6,3X,'GAMMA(S)=',E13.6,3X,
+99029 FORMAT (' NEW COMPONENTS')
+99030 FORMAT (2x,6A12)
+99031 FORMAT (' WARNING!  RESULTS MAY BE WRONG FOR POINT',I3,' DUE TO',
+     &        '\n LOW MOLE FRACTION OF GASES (',E15.8,') (EQLBRM)')
+99032 FORMAT (' POINT=',I3,3X,'P=',E13.6,3X,'T=',E13.6,'\n',3X,'H/R=',
+     &        E13.6,3X,'S/R=',E13.6,'\n',3X,'M=',E13.6,3X,'CP/R=',
+     &        E13.6,3X,
+     &        'DLVPT=',E13.6,'\n',3X,'DLVTP=',E13.6,3X,'GAMMA(S)=',
+     &        E13.6,3X,
      &        'V=',E13.6)
 99033 FORMAT (' THE TEMPERATURE=',E12.4,' IS OUT OF RANGE FOR POINT',I5,
      &        '(EQLBRM)')
-99034 FORMAT (/,I3,' CONVERGENCES FAILED TO ESTABLISH SET OF CONDENSED',
+99034 FORMAT (I3,' CONVERGENCES FAILED TO ESTABLISH SET OF CONDENSED',
      &        ' SPECIES (EQLBRM)')
-99035 FORMAT (/' CALCULATIONS STOPPED AFTER POINT',I3,'(EQLBRM)')
+99035 FORMAT (' CALCULATIONS STOPPED AFTER POINT',I3,'(EQLBRM)')
       END
       SUBROUTINE FROZEN
 C***********************************************************************
@@ -1933,7 +1979,7 @@ C LOCAL VARIABLES
       REAL*8 dlnt,dlpm
       SAVE dlnt,dlpm,i,inc,iter,j,k,nnn
 C
-      CALL mexPrintf('Subroutine FROZEN called \n')
+      CALL mexWarnMsgTxt('Subroutine FROZEN called \n')
 
       Convg = .FALSE.
       Tln = DLOG(Tt)
@@ -2013,7 +2059,7 @@ C LOCAL VARIABLES
 C
       DATA bigno/1.E+25/
 
-      CALL mexPrintf('Subroutine GAUSS called \n')
+      ! CALL mexWarnMsgTxt('Subroutine GAUSS called \n')
 
 C BEGIN ELIMINATION OF NNTH VARIABLE
       imatp1 = Imat + 1
@@ -2114,7 +2160,7 @@ C LOCAL VARIABLES
       SAVE bb,date,el,enj,er,i,icf,ifaz,itot,j,k,l,m,n,nall,nint,ntgas,
      &  ntot,sj,sub,t1,t2,tem,thermo,tsave
 C
-      CALL mexPrintf('Subroutine HCALC called \n')
+      CALL mexWarnMsgTxt('Subroutine HCALC called \n')
 
       tsave = Tt
       Tm = 0.
@@ -2252,6 +2298,7 @@ C   DPIN - NUMERICS AS DOUBLE PRECISION VARIABLE.
 C   CNUM - CHARACTER STRING REPRESENTING DATASET NUMBERS. MAXIMUM 24
 C          CHARACTERS.
 C***********************************************************************
+      USE mexVars
       IMPLICIT NONE
       INCLUDE 'cea.inc'
 C DUMMY ARGUMENTS
@@ -2275,7 +2322,7 @@ C
       DATA numg/'1','2','3','4','5','6','7','8','9','10','11','12','13',
      &     '14','15','16','17','18','19','20','21','22','23','24'/
 
-      CALL mexPrintf('Subroutine INFREE called \n')
+      ! CALL mexWarnMsgTxt('Subroutine INFREE called \n')
 
       Ncin = 1
       Lcin(1) = 0
@@ -2315,7 +2362,10 @@ C FIND FIRST AND LAST NON-BLANK CHARACTER
         IF( ch1(i).NE.' '.AND.ch1(i).NE.'	'.AND.ch1(i).NE.'' )GOTO 300
       ENDDO
  300  IF ( nch1.EQ.1.OR.ch1(ich1).EQ.'#'.OR.ch1(ich1).EQ.'!' ) THEN
-        WRITE (IOOUT,99002) (ch1(i),i=1,nch1)
+        ! WRITE (errMsg,99002) (ch1(i),i=1,nch1)
+        ! CALL mexPrintf(errMsg)
+        ! CALL mexPrintf('\n')
+        ! WRITE (IOOUT,99002) (ch1(i),i=1,nch1)
         GOTO 100
       ENDIF
       w1 = ch1(ich1)//ch1(ich1+1)//ch1(ich1+2)//ch1(ich1+3)
@@ -2326,7 +2376,10 @@ C IS STRING A KEYWORD SIGNALLING START OR END OF DATASET?
         IF ( Ncin.EQ.1 ) THEN
           Cin(Ncin) = w1
           IF ( w1(1:3).EQ.'end'.OR.w1.EQ.'ther'.OR.w1.EQ.'tran' ) THEN
-            WRITE (IOOUT,99002) (ch1(i),i=1,nch1) ! header
+            ! WRITE (errMsg,99002) (ch1(i),i=1,nch1) ! header
+            ! CALL mexPrintf(errMsg)
+            ! CALL mexPrintf('\n')
+            ! WRITE (IOOUT,99002) (ch1(i),i=1,nch1) ! header
             RETURN
           ENDIF
           ich1 = ich1 + 4
@@ -2348,10 +2401,15 @@ C KEYWORD READ FOR NEXT DATASET. END PROCESSING
         ! WRITE(errMsg,99005) exInp
         ! CALL mexPrintf('\nexit is at at: ')
         ! CALL mexPrintf(errMsg)
-        WRITE (IOOUT,99003) ! error
+        WRITE (errMsg,99003) ! error
+        CALL mexErrMsgIdAndTxt('CEA:INFREE',errMsg)
+        ! WRITE (IOOUT,99003) ! error
         GOTO 500
       ENDIF
-      WRITE (IOOUT,99002) (ch1(i),i=1,nch1) ! header
+      ! WRITE (errMsg,99002) (ch1(i),i=1,nch1) ! header
+      ! CALL mexPrintf(errMsg)
+      ! CALL mexPrintf('\n')
+      ! WRITE (IOOUT,99002) (ch1(i),i=1,nch1) ! header
       DO 400 i = ich1,nch1
         cx = ch1(i)
 C LOOK FOR DELIMITER STRINGS
@@ -2388,7 +2446,11 @@ C INTERNAL READ TO CONVERT TO NUMERIC
             READ (cnum,fmtl,ERR=320) Dpin(Ncin)
           ENDIF
           GOTO 340
- 320      IF ( Cin(Ncin-1)(:4).NE.'case' ) WRITE (IOOUT,99004) Cin(i)! warning
+ 320      IF ( Cin(Ncin-1)(:4).NE.'case' ) THEN
+            WRITE (errMsg,99004) Cin(i)! warning
+            CALL mexWarnMsgIdAndTxt('CEA:INFREE',errMsg)
+            ! WRITE (IOOUT,99004) Cin(i)! warning
+          ENDIF
           Lcin(Ncin) = 0
  340      Ncin = Ncin + 1
           Cin(Ncin) = ' '
@@ -2408,8 +2470,8 @@ C INTERNAL READ TO CONVERT TO NUMERIC
  500  Readok = .FALSE.
       RETURN
 99001 FORMAT (132A1)
-99002 FORMAT (1x,80A1)
-99003 FORMAT (/' FATAL ERROR IN INPUT FORMAT (INFREE)')
+99002 FORMAT (1x,80A1,'\','n')
+99003 FORMAT (' FATAL ERROR IN INPUT FORMAT (INFREE)')
 99004 FORMAT (/' WARNING!!  UNACCEPTABLE NUMBER ',A15,' (INFREE)')
 99005 FORMAT(I3)
       END
@@ -2417,6 +2479,7 @@ C INTERNAL READ TO CONVERT TO NUMERIC
 C***********************************************************************
 C DECIPHER KEYWORDS, LITERAL VARIABLES, & NUMERICAL VARIABLES IN INPUT.
 C***********************************************************************
+      USE mexVars
       IMPLICIT NONE
       INCLUDE 'cea.inc'
 C DUMMY ARGUMENTS
@@ -2443,9 +2506,9 @@ C     gives the save atribute to the variables, so you can access them outsite t
 C
       DATA uc/'ABCDEFGHIJKLMNOPQRSTUVWXYZ'/ !initialize uppercase
       DATA lc/'abcdefghijklmnopqrstuvwxyz'/ !initialize lowercase
-      WRITE (IOOUT,99001) ! header empty line
+      ! WRITE (IOOUT,99001) ! header empty line
 
-      CALL mexPrintf('Subroutine INPUT called \n')
+      ! CALL mexWarnMsgTxt('Subroutine INPUT called \n')
 
 C     Initialize variables
       Caseok = .TRUE.
@@ -2494,7 +2557,9 @@ C CALL UTHERM TO CONVERT FORMATTED THERMODYNAMIC DATA
           REWIND IOTHM
           CALL UTHERM(Readok)
           IF ( .NOT.Readok ) THEN
-            WRITE (IOOUT,99025) ! error
+            WRITE (errMsg,99025)
+            CALL mexErrMsgIdAndTxt('CEA:INPUT:UTHERM',errMsg)
+            ! WRITE (IOOUT,99025) ! error
             GOTO 400
           ENDIF
 C KEYWORD 'TRAN' READ
@@ -2502,7 +2567,9 @@ C CALL UTRAN TO CONVERT FORMATTED TRANSPORT PROPERTIES
         ELSEIF ( code.EQ.'tran' ) THEN
           CALL UTRAN(Readok)
           IF ( .NOT.Readok ) THEN
-            WRITE (IOOUT,99025) ! error
+            WRITE (errMsg,99025)
+            CALL mexErrMsgIdAndTxt('CEA:INPUT:UTRAN',errMsg)
+            ! WRITE (IOOUT,99025) ! error
             GOTO 400
           ENDIF
 C PROCESS 'OUTP' DATASET.
@@ -2537,7 +2604,9 @@ C PROCESS 'OUTP' DATASET.
               ELSEIF ( cx2.EQ.'pl' ) THEN
                 pltdat = .TRUE.
               ELSE
-                WRITE (IOOUT,99002) cin(i) ! warning
+                WRITE(errMsg,99002) cin(i)
+                CALL mexWarnMsgIdAndTxt('CEA:INPUT:OUTP',errMsg)
+                ! WRITE (IOOUT,99002) cin(i) ! warning
               ENDIF
             ENDIF
  120      CONTINUE
@@ -2554,7 +2623,9 @@ C SORT AND STORE DATA FROM 'REAC' DATASET.
           IF ( i.LE.ncin ) THEN
             IF ( lcin(i).NE.0 ) THEN
               IF ( lcin(i).GT.0 ) THEN
-                WRITE (IOOUT,99003) cin(i) ! warning
+                WRITE (errMsg,99003) cin(i)
+                CALL mexWarnMsgIdAndTxt('CEA:INPUT:REAC',errMsg)
+                ! WRITE (IOOUT,99003) cin(i) ! warning
                 GOTO 140
               ENDIF
               cx15 = cin(i)
@@ -2571,13 +2642,17 @@ C LOOK FOR PERCENTS
                     Pecwt(Nreac) = dpin(i)
                   ELSE
                     Caseok = .FALSE.
-                    WRITE (IOOUT,99004) ! error
+                    WRITE (errMsg,99004)
+                    CALL mexWarnMsgIdAndTxt('CEA:INPUT:REAC',errMsg)
+                    ! WRITE (IOOUT,99004) ! warning
                   ENDIF
                   IF ( cx1.EQ.'m'.AND.Nreac.EQ.1 ) Moles = .TRUE.
                   IF ( cx1.EQ.'m'.AND..NOT.Moles.OR.cx1.EQ.'w'.AND.
      &                 Moles ) THEN
                     Caseok = .FALSE.
-                    WRITE (IOOUT,99005) ! error
+                    WRITE (errMsg,99005)
+                    CALL mexWarnMsgIdAndTxt('CEA:INPUT:REAC:%%',errMsg)
+                    ! WRITE (IOOUT,99005) ! warning
                   ENDIF
                   GOTO 140
                 ENDIF
@@ -2595,7 +2670,9 @@ C LOOK FOR TEMPERATURES
      &                     = (Rtemp(Nreac)-32.D0)/1.8D0 + 273.15D0
                     ENDIF
                   ELSE
-                    WRITE (IOOUT,99006) ! error
+                    WRITE (errMsg,99006)
+                    CALL mexWarnMsgIdAndTxt('CEA:INPUT:REAC:TMP',errMsg)
+                    ! WRITE (IOOUT,99006) ! warning
                     Caseok = .FALSE.
                   ENDIF
                   GOTO 140
@@ -2642,7 +2719,9 @@ C CHECK FOR CHEMICAL SYMBOLS IN EXPLODED FORMULA
                   i = i + 1
                   GOTO 140
                 ENDIF
-                WRITE (IOOUT,99007) cin(i) ! warning
+                WRITE (errMsg,99007) cin(i)
+                CALL mexWarnMsgIdAndTxt('CEA:INPUT:REAC:CHEM',errMsg)
+                ! WRITE (IOOUT,99007) cin(i) ! warning
               ELSE
                 Nreac = MIN(Nreac+1,MAXR)
                 Fox(Nreac) = cx15
@@ -2781,7 +2860,9 @@ C ASSOCIATED NUMERICAL DATA.
               ELSEIF ( cx4.EQ.'ions' ) THEN
                 Ions = .TRUE.
               ELSE
-                WRITE (IOOUT,99002) cx15 ! warning
+                WRITE (errMsg,99002) cx15
+                CALL mexWarnMsgIdAndTxt('CEA:INPUT:PROB',errMsg)
+                ! WRITE (IOOUT,99002) cx15 ! warning
               ENDIF
               lcin(i) = 0
             ENDIF
@@ -2804,33 +2885,74 @@ C ASSOCIATED NUMERICAL DATA.
           IF ( Siunit ) R = Rr/1000.
           IF ( Detn.OR.Shock ) Newr = .TRUE.
           IF ( .NOT.Short ) THEN
-            WRITE (IOOUT,99008) Tp,(Hp.AND..NOT.Vol),Sp,(Tp.AND.Vol),! variables
+            WRITE (errMsg,99008) Tp,(Hp.AND..NOT.Vol),Sp,(Tp.AND.Vol),! variables
      &                      (Hp.AND.Vol),(Sp.AND.Vol),Detn,Shock,refl,
      &                      incd,Rkt,Froz,Eql,Ions,Siunit,Debugf,Shkdbg,
      &                      Detdbg,Trnspt
-            IF ( T(1).GT.0. ) WRITE (IOOUT,99009) (T(jj),jj=1,Nt)! variable
-            WRITE (IOOUT,99010) Trace,S0,hr,ur! variables
-            IF ( Np.GT.0.AND.Vol ) WRITE (IOOUT,99011)! variable
-     &           (V(jj)*1.D-05,jj=1,Np)
+            CALL mexPrintf('input format 99008 called\n')
+            CALL mexPrintf(errMsg)
+    !         WRITE (IOOUT,99008) Tp,(Hp.AND..NOT.Vol),Sp,(Tp.AND.Vol),! variables
+    !  &                      (Hp.AND.Vol),(Sp.AND.Vol),Detn,Shock,refl,
+    !  &                      incd,Rkt,Froz,Eql,Ions,Siunit,Debugf,Shkdbg,
+    !  &                      Detdbg,Trnspt
+            IF ( T(1).GT.0. ) THEN
+              WRITE (errMsg,99009) (T(jj),jj=1,Nt)! variable
+              CALL mexPrintf('input format 99009 called\n')
+              CALL mexPrintf(errMsg)
+              ! WRITE (IOOUT,99009) (T(jj),jj=1,Nt)! variable
+            ENDIF
+            WRITE (errMsg,99010) Trace,S0,hr,ur! variables
+            CALL mexPrintf('input format 99010 called\n')
+            CALL mexPrintf(errMsg)
+            ! WRITE (IOOUT,99010) Trace,S0,hr,ur! variables
+            IF ( Np.GT.0.AND.Vol ) THEN
+            WRITE (errMsg,99011) (V(jj)*1.D-05,jj=1,Np) ! variable
+            CALL mexPrintf('input format 99011 called\n')
+            CALL mexPrintf(errMsg)
+            ! WRITE (IOOUT,99011) (V(jj)*1.D-05,jj=1,Np) ! variable
+            ENDIF
           ENDIF
           IF ( Rkt ) THEN
             IF ( Nt.EQ.0 ) Hp = .TRUE.
             IF ( .NOT.Short ) THEN
-              WRITE (IOOUT,99012) (P(jj),jj=1,Np) ! variable
-              WRITE (IOOUT,99013) (Pcp(jj),jj=1,Npp) ! variable
-              WRITE (IOOUT,99014) (Subar(i),i=1,Nsub) ! variable
-              WRITE (IOOUT,99015) (Supar(i),i=1,Nsup) ! variable
-              WRITE (IOOUT,99016) Nfz,Ma,Acat ! variable
+              WRITE (errMsg,99012) (P(jj),jj=1,Np) ! variable
+              CALL mexPrintf('input format 99012 called\n')
+              CALL mexPrintf(errMsg)
+              ! WRITE (IOOUT,99012) (P(jj),jj=1,Np) ! variable
+              WRITE (errMsg,99013) (Pcp(jj),jj=1,Npp) ! variable
+              CALL mexPrintf('input format 99013 called\n')
+              CALL mexPrintf(errMsg)
+              ! WRITE (IOOUT,99013) (Pcp(jj),jj=1,Npp) ! variable
+              WRITE (errMsg,99014) (Subar(i),i=1,Nsub) ! variable
+              CALL mexPrintf('input format 99014 called\n')
+              CALL mexPrintf(errMsg)
+              ! WRITE (IOOUT,99014) (Subar(i),i=1,Nsub) ! variable
+              WRITE (errMsg,99015) (Supar(i),i=1,Nsup) ! variable
+              CALL mexPrintf('input format 99015 called\n')
+              CALL mexPrintf(errMsg)
+              ! WRITE (IOOUT,99015) (Supar(i),i=1,Nsup) ! variable
+              WRITE (errMsg,99016) Nfz,Ma,Acat ! variable
+              CALL mexPrintf('input format 99016 called\n')
+              CALL mexPrintf(errMsg)
+              ! WRITE (IOOUT,99016) Nfz,Ma,Acat ! variable
             ENDIF
           ELSE
-            IF ( .NOT.Vol.AND..NOT.Short ) WRITE (IOOUT,99017) ! variable
-     &           (P(jj),jj=1,Np)
+            IF ( .NOT.Vol.AND..NOT.Short ) THEN
+              WRITE (errMsg,99017) (P(jj),jj=1,Np) ! variable
+              CALL mexPrintf('input format 99017 called\n')
+              CALL mexPrintf(errMsg)
+              ! WRITE (IOOUT,99017) (P(jj),jj=1,Np) ! variable
+            ENDIF
           ENDIF
           IF ( reacts ) CALL REACT
           IF ( Nreac.EQ.0.OR.Nlm.LE.0 ) THEN
-            WRITE (IOOUT,99018) ! error
+            WRITE (errMsg,99018) ! error
+            CALL mexWarnMsgIdAndTxt('CEA:INPUT:Nreac',errMsg)
+            ! WRITE (IOOUT,99018) ! error
             Caseok = .FALSE.
-            WRITE (IOOUT,99025) ! error
+            WRITE (errMsg,99025) ! error
+            CALL mexErrMsgIdAndTxt('CEA:INPUT:Nreac',errMsg)
+            ! WRITE (IOOUT,99025) ! error
             GOTO 400
           ENDIF
           IF ( Nof.EQ.0 ) THEN
@@ -2840,8 +2962,12 @@ C ASSOCIATED NUMERICAL DATA.
               Oxf(1) = Wp(1)/Wp(2)
             ELSE
               Caseok = .FALSE.
-              WRITE (IOOUT,99004) ! error
-              WRITE (IOOUT,99025) ! error
+              WRITE (errMsg,99004) ! error
+              CALL mexWarnMsgIdAndTxt('CEA:INPUT:Nof',errMsg)
+              ! WRITE (IOOUT,99004) ! error
+              WRITE (errMsg,99025) ! error
+              CALL mexErrMsgIdAndTxt('CEA:INPUT:Nof',errMsg)
+              ! WRITE (IOOUT,99025) ! error
               GOTO 400
             ENDIF
           ELSEIF ( phi.OR.eqrats ) THEN
@@ -2856,8 +2982,12 @@ C ASSOCIATED NUMERICAL DATA.
               ENDIF
               IF ( DABS(denmtr).LT.1.D-30 ) THEN
                 Caseok = .FALSE.
-                WRITE (IOOUT,99019) eratio ! error
-                WRITE (IOOUT,99025) ! error
+                WRITE (errMsg,99019) eratio ! error
+                CALL mexWarnMsgIdAndTxt('CEA:INPUT:DABS',errMsg)
+                ! WRITE (IOOUT,99019) eratio ! error
+                WRITE (errMsg,99025) ! error
+                CALL mexErrMsgIdAndTxt('CEA:INPUT:DABS',errMsg)
+                ! WRITE (IOOUT,99025) ! error
                 GOTO 400
               ENDIF
               Oxf(i) = xyz/denmtr
@@ -2866,18 +2996,30 @@ C ASSOCIATED NUMERICAL DATA.
           IF ( .NOT.Sp.AND..NOT.Tp.AND..NOT.Hp.AND..NOT.Rkt.AND.
      &         .NOT.Detn.AND..NOT.Shock ) THEN
             Caseok = .FALSE.
-            WRITE (IOOUT,99020) ! error
+            WRITE (errMsg,99020) ! error
+            CALL mexErrMsgIdAndTxt('CEA:INPUT',errMsg)
+            ! WRITE (IOOUT,99020) ! error
           ELSEIF ( Tp.AND.T(1).LE.0. ) THEN
             Caseok = .FALSE.
-            WRITE (IOOUT,99021) ! error
+            WRITE (errMsg,99021) ! error
+            CALL mexErrMsgIdAndTxt('CEA:INPUT',errMsg)
+            ! WRITE (IOOUT,99021) ! error
           ELSEIF ( Np.LE.0 ) THEN
             Caseok = .FALSE.
-            WRITE (IOOUT,99022) ! error
+            WRITE (errMsg,99022) ! error
+            CALL mexErrMsgIdAndTxt('CEA:INPUT',errMsg)
+            ! WRITE (IOOUT,99022) ! error
           ENDIF
-          IF ( .NOT.(Caseok.AND.Nlm.GT.0) ) WRITE (IOOUT,99025) !error
+          IF ( .NOT.(Caseok.AND.Nlm.GT.0) ) THEN
+            WRITE (errMsg,99025) ! error
+            CALL mexErrMsgIdAndTxt('CEA:INPUT',errMsg)
+            ! WRITE (IOOUT,99025) !error
+          ENDIF
           GOTO 400
         ELSE
-          WRITE (IOOUT,99023) !warning
+          WRITE (errMsg,99023) ! warning
+          CALL mexWarnMsgIdAndTxt('CEA:INPUT',errMsg)
+          ! WRITE (IOOUT,99023) !warning
         ENDIF
       ENDIF
       GOTO 100
@@ -2912,7 +3054,9 @@ C PROCESS NUMERICAL DATA FOLLOWING 'PROB' LITERALS
         Nt = nmix
         IF ( nmix.GT.MAXMIX ) THEN
           Nt = MAXMIX
-          WRITE (IOOUT,99024) 't',Nt ! warning
+          WRITE (errMsg,99024) 't',Nt ! warning
+          CALL mexWarnMsgIdAndTxt('CEA:INPUT:nmix',errMsg)
+          ! WRITE (IOOUT,99024) 't',Nt ! warning
         ENDIF
         DO i = 1,Nt
           IF ( cx4.NE.'tces' ) THEN
@@ -2930,7 +3074,9 @@ C PROCESS NUMERICAL DATA FOLLOWING 'PROB' LITERALS
         Npp = nmix
         IF ( nmix.GT.2*NCOL ) THEN
           Npp = 2*NCOL
-          WRITE (IOOUT,99024) 'pcp',Npp ! warning
+          WRITE (errMsg,99024) 'pcp',Npp ! warning
+          CALL mexWarnMsgIdAndTxt('CEA:INPUT:nmix',errMsg)
+          ! WRITE (IOOUT,99024) 'pcp',Npp ! warning
         ENDIF
         DO i = 1,Npp
           Pcp(i) = mix(i)
@@ -2939,7 +3085,9 @@ C PROCESS NUMERICAL DATA FOLLOWING 'PROB' LITERALS
         Np = nmix
         IF ( nmix.GT.MAXPV ) THEN
           Np = MAXPV
-          WRITE (IOOUT,99024) 'p',Np ! warning
+          WRITE (errMsg,99024) 'p',Np ! warning
+          CALL mexWarnMsgIdAndTxt('CEA:INPUT:nmix',errMsg)
+          ! WRITE (IOOUT,99024) 'p',Np ! warning
         ENDIF
         DO 350 i = 1,Np
           P(i) = mix(i)
@@ -2958,7 +3106,9 @@ C PROCESS NUMERICAL DATA FOLLOWING 'PROB' LITERALS
         Np = nmix
         IF ( nmix.GT.MAXPV ) THEN
           Np = MAXPV
-          WRITE (IOOUT,99024) 'rho',Np ! warning
+          WRITE (errMsg,99024) 'rho',Np ! warning
+          CALL mexWarnMsgIdAndTxt('CEA:INPUT:nmix',errMsg)
+          ! WRITE (IOOUT,99024) 'rho',Np ! warning
         ENDIF
         DO i = 1,Np
           V(i) = xyz/mix(i)
@@ -2969,7 +3119,9 @@ C PROCESS NUMERICAL DATA FOLLOWING 'PROB' LITERALS
         Np = nmix
         IF ( nmix.GT.MAXPV ) THEN
           Np = MAXPV
-          WRITE (IOOUT,99024) 'v',Np ! warning
+          WRITE (errMsg,99024) 'v',Np ! warning
+          CALL mexWarnMsgIdAndTxt('CEA:INPUT:nmix',errMsg)
+          ! WRITE (IOOUT,99024) 'v',Np ! warning
         ENDIF
         DO i = 1,Np
           V(i) = mix(i)*xyz
@@ -2991,7 +3143,9 @@ C PROCESS NUMERICAL DATA FOLLOWING 'PROB' LITERALS
         Nsk = nmix
         IF ( nmix.GT.NCOL ) THEN
           Nsk = NCOL
-          WRITE (IOOUT,99024) 'u1',Nsk ! warning
+          WRITE (errMsg,99024) 'u1',Nsk ! warning
+          CALL mexWarnMsgIdAndTxt('CEA:INPUT:nmix',errMsg)
+          ! WRITE (IOOUT,99024) 'u1',Nsk ! warning
         ENDIF
         DO i = 1,Nsk
           U1(i) = mix(i)
@@ -3000,7 +3154,9 @@ C PROCESS NUMERICAL DATA FOLLOWING 'PROB' LITERALS
         Nsk = nmix
         IF ( nmix.GT.NCOL ) THEN
           Nsk = NCOL
-          WRITE (IOOUT,99024) 'mach1',Nsk ! warning 
+          WRITE (errMsg,99024) 'mach1',Nsk ! warning
+          CALL mexWarnMsgIdAndTxt('CEA:INPUT:nmix',errMsg)
+          ! WRITE (IOOUT,99024) 'mach1',Nsk ! warning 
         ENDIF
         DO i = 1,Nsk
           Mach1(i) = mix(i)
@@ -3009,7 +3165,9 @@ C PROCESS NUMERICAL DATA FOLLOWING 'PROB' LITERALS
         Nsub = nmix
         IF ( nmix.GT.13 ) THEN
           Nsub = 13
-          WRITE (IOOUT,99024) 'subar',Nsub ! warning
+          WRITE (errMsg,99024) 'subar',Nsub ! warning
+          CALL mexWarnMsgIdAndTxt('CEA:INPUT:nmix',errMsg)
+          ! WRITE (IOOUT,99024) 'subar',Nsub ! warning
         ENDIF
         DO i = 1,Nsub
           Subar(i) = mix(i)
@@ -3018,7 +3176,9 @@ C PROCESS NUMERICAL DATA FOLLOWING 'PROB' LITERALS
         Nsup = nmix
         IF ( nmix.GT.13 ) THEN
           Nsup = 13
-          WRITE (IOOUT,99024) 'supar',Nsup ! warning
+          WRITE (errMsg,99024) 'supar',Nsup ! warning
+          CALL mexWarnMsgIdAndTxt('CEA:INPUT:nmix',errMsg)
+          ! WRITE (IOOUT,99024) 'supar',Nsup ! warning
         ENDIF
         DO i = 1,Nsup
           Supar(i) = mix(i)
@@ -3036,7 +3196,9 @@ C PROCESS NUMERICAL DATA FOLLOWING 'PROB' LITERALS
         Nof = nmix
         IF ( nmix.GT.MAXMIX ) THEN
           Nof = MAXMIX
-          WRITE (IOOUT,99024) 'o/f',Nof ! warning
+          WRITE (errMsg,99024) 'o/f',Nof ! warning
+          CALL mexWarnMsgIdAndTxt('CEA:INPUT:nmix',errMsg)
+          ! WRITE (IOOUT,99024) 'o/f',Nof ! warning
         ENDIF
         DO k = 1,Nof
           Oxf(k) = mix(k)
@@ -3055,44 +3217,46 @@ C PROCESS NUMERICAL DATA FOLLOWING 'PROB' LITERALS
           ENDDO
         ENDIF
       ELSE
-        WRITE (IOOUT,99002) cx15 ! warning
+        WRITE (errMsg,99002) cx15 ! warning
+        CALL mexWarnMsgIdAndTxt('CEA:INPUT',errMsg)
+        ! WRITE (IOOUT,99002) cx15 ! warning
       ENDIF
       IF ( iv.GE.ncin ) GOTO 100
       GOTO 200
  400  RETURN
 99001 FORMAT (/,/)
-99002 FORMAT ('  WARNING!!  DID NOT RECOGNIZE ',A15,' (INPUT)'/)
-99003 FORMAT (/' WARNING!!  LITERAL EXPECTED FOR ',A15,'(INPUT)')
-99004 FORMAT (/' REACTANT AMOUNT MISSING (INPUT)')
-99005 FORMAT (/' MOLES AND WEIGHT PERCENTS SHOULD NOT BE MIXED (INPUT)')
-99006 FORMAT (/' REACTANT TEMPERATURE MISSING (INPUT) ')
-99007 FORMAT (/' WARNING!! ',A15,' NOT RECOGNIZED (INPUT)')
-99008 FORMAT (/' OPTIONS: TP=',L1,'  HP=',L1,'  SP=',L1,'  TV=',L1,
+99002 FORMAT ('  WARNING!!  DID NOT RECOGNIZE ',A15,' (INPUT)')
+99003 FORMAT (' WARNING!!  LITERAL EXPECTED FOR ',A15,'(INPUT)')
+99004 FORMAT (' REACTANT AMOUNT MISSING (INPUT)')
+99005 FORMAT (' MOLES AND WEIGHT PERCENTS SHOULD NOT BE MIXED (INPUT)')
+99006 FORMAT (' REACTANT TEMPERATURE MISSING (INPUT) ')
+99007 FORMAT (' WARNING!! ',A15,' NOT RECOGNIZED (INPUT)')
+99008 FORMAT (' OPTIONS: TP=',L1,'  HP=',L1,'  SP=',L1,'  TV=',L1,
      &        '  UV=',L1,'  SV=',L1,'  DETN=',L1,'  SHOCK=',L1,
-     &        '  REFL=',L1,'  INCD=',L1,/' RKT=',L1,'  FROZ=',L1,
+     &        '  REFL=',L1,'  INCD=',L1,'\n',' RKT=',L1,'  FROZ=',L1,
      &        '  EQL=',L1,'  IONS=',L1,'  SIUNIT=',L1,'  DEBUGF=',L1,
-     &        '  SHKDBG=',L1,'  DETDBG=',L1,'  TRNSPT=',L1)
-99009 FORMAT (/' T,K =',7F11.4)
-99010 FORMAT (/1p,' TRACE=',E9.2,'  S/R=',E13.6,'  H/R=',E13.6,'  U/R=',
-     &        E13.6)
-99011 FORMAT (/' SPECIFIC VOLUME,M**3/KG =',1p,(4E14.7))
-99012 FORMAT (/' Pc,BAR =',7F13.6)
-99013 FORMAT (/' Pc/P =',9F11.4)
-99014 FORMAT (/' SUBSONIC AREA RATIOS =',(5F11.4))
-99015 FORMAT (/' SUPERSONIC AREA RATIOS =',(5F11.4))
-99016 FORMAT (/' NFZ=',i3,1p,'  Mdot/Ac=',e13.6,'  Ac/At=',e13.6)
-99017 FORMAT (/' P,BAR =',7F13.6)
-99018 FORMAT (/' ERROR IN REACTANTS DATASET (INPUT)')
-99019 FORMAT (/' UNABLE TO PROCESS EQUIVALENCE RATIO =',E11.4,'(INPUT)')
-99020 FORMAT (/' TYPE OF PROBLEM NOT SPECIFIED (INPUT)')
-99021 FORMAT (/' ASSIGNED VALUES OF TEMPERATURE ARE MISSING IN prob',
+     &        '  SHKDBG=',L1,'  DETDBG=',L1,'  TRNSPT=',L1,'\n')
+99009 FORMAT (' T,K =',7F11.4,'\n')
+99010 FORMAT (1p,' TRACE=',E9.2,'  S/R=',E13.6,'  H/R=',E13.6,'  U/R=',
+     &        E13.6,'\n')
+99011 FORMAT (' SPECIFIC VOLUME,M**3/KG =',1p,(4E14.7),'\n')
+99012 FORMAT (' Pc,BAR =',7F13.6,'\n')
+99013 FORMAT (' Pc/P =',9F11.4,'\n')
+99014 FORMAT (' SUBSONIC AREA RATIOS =',(5F11.4),'\n')
+99015 FORMAT (' SUPERSONIC AREA RATIOS =',(5F11.4),'\n')
+99016 FORMAT (' NFZ=',i3,1p,'  Mdot/Ac=',e13.6,'  Ac/At=',e13.6,'\n')
+99017 FORMAT (' P,BAR =',7F13.6,'\n')
+99018 FORMAT (' ERROR IN REACTANTS DATASET (INPUT)')
+99019 FORMAT (' UNABLE TO PROCESS EQUIVALENCE RATIO =',E11.4,'(INPUT)')
+99020 FORMAT (' TYPE OF PROBLEM NOT SPECIFIED (INPUT)')
+99021 FORMAT (' ASSIGNED VALUES OF TEMPERATURE ARE MISSING IN prob',
      &        ' DATASET (INPUT)')
-99022 FORMAT (/' ASSIGNED PRESSURE (OR DENSITY) MISSING IN prob',
+99022 FORMAT (' ASSIGNED PRESSURE (OR DENSITY) MISSING IN prob',
      &        ' DATASET (INPUT)')
-99023 FORMAT (/' WARNING!!  A KEYWORD IS MISSING (INPUT)')
-99024 FORMAT (/' NOTE!! MAXIMUM NUMBER OF ASSIGNED ',A5,' VALUES IS',I3,
-     &        ' (INPUT)',/)
-99025 FORMAT (/' FATAL ERROR IN DATASET (INPUT)')
+99023 FORMAT (' WARNING!!  A KEYWORD IS MISSING (INPUT)')
+99024 FORMAT (' NOTE!! MAXIMUM NUMBER OF ASSIGNED ',A5,' VALUES IS',I3,
+     &        ' (INPUT)')
+99025 FORMAT (' FATAL ERROR IN DATASET (INPUT)')
       END
       SUBROUTINE MATRIX
 C***********************************************************************
@@ -3105,7 +3269,7 @@ C LOCAL VARIABLES
       REAL*8 energyl,f,h,ss,sss,term,term1
       SAVE energyl,f,h,i,iq,iq2,iq3,isym,j,k,kk,kmat,ss,sss,term,term1
 C
-      CALL mexPrintf('Subroutine MATRIX called \n')
+      ! CALL mexWarnMsgTxt('Subroutine MATRIX called \n')
 
       iq = Nlm + Npr
       Iq1 = iq + 1
@@ -3242,6 +3406,7 @@ CDIR$ IVDEP
 C***********************************************************************
 C CALCULATE NEW VALUES OF B0 AND HSUB0 FOR NEW OF RATIO
 C***********************************************************************
+      USE mexVars
       IMPLICIT NONE
       INCLUDE 'cea.inc'
 C LOCAL VARIABLES
@@ -3250,9 +3415,13 @@ C LOCAL VARIABLES
       REAL*8 DABS,DLOG
       SAVE assval,bigb,bratio,dbi,i,j,smalb,tem,v1,v2
 C
-      CALL mexPrintf('Subroutine NEWOF called \n')
+      ! CALL mexWarnMsgTxt('Subroutine NEWOF called \n')
 
-      IF ( .NOT.Short ) WRITE (IOOUT,99001) Oxfl ! variable
+      IF ( .NOT.Short ) THEN
+        WRITE (errMsg,99001) Oxfl ! variable
+        CALL mexWarnMsgIdAndTxt('CEA:NEWOF:OF',errMsg)
+        ! WRITE (IOOUT,99001) Oxfl ! variable
+      ENDIF
       Eqrat = 0.
       tem = Oxfl + 1.
       v2 = (Oxfl*Vmin(1)+Vmin(2))/tem
@@ -3288,25 +3457,42 @@ C NOTE THAT "BRATIO" IS "BRATIO" IN SEC 3.2 IN RP-1311.
       Jsol = 0
       Jliq = 0
       IF ( .NOT.Short ) THEN
-        WRITE (IOOUT,99002) ! header
-        IF ( Vol ) WRITE (IOOUT,99003) ! header
-        IF ( .NOT.Vol ) WRITE (IOOUT,99004) ! header
-        WRITE (IOOUT,99005) Hpp(2),Hpp(1),Hsub0 ! variable
-        WRITE (IOOUT,99006)! header
+        WRITE (errMsg,99002) ! header
+        CALL mexWarnMsgIdAndTxt('CEA:NEWOF:EFF',errMsg)
+        ! WRITE (IOOUT,99002) ! header
+        IF ( Vol ) THEN
+          WRITE (errMsg,99003) ! header
+          CALL mexWarnMsgIdAndTxt('CEA:NEWOF:ENERGY',errMsg)
+          ! WRITE (IOOUT,99003) ! header
+        ENDIF
+        IF ( .NOT.Vol ) THEN
+          WRITE (errMsg,99004) ! header
+          CALL mexWarnMsgIdAndTxt('CEA:NEWOF:ENTHALPY',errMsg)
+          ! WRITE (IOOUT,99004) ! header
+        ENDIF
+        WRITE (errMsg,99005) Hpp(2),Hpp(1),Hsub0! header
+        CALL mexWarnMsgIdAndTxt('CEA:NEWOF:NRGH',errMsg)
+        ! WRITE (IOOUT,99005) Hpp(2),Hpp(1),Hsub0 ! variable
+        WRITE (errMsg,99006)! header
+        CALL mexWarnMsgIdAndTxt('CEA:NEWOF:WEIGHT',errMsg)
+        ! WRITE (IOOUT,99006)! header
       ENDIF
       DO i = 1,Nlm
         j = Jcm(i)
-        IF ( .NOT.Short ) WRITE (IOOUT,99007) Prod(j),B0p(i,2),B0p(i,1), ! variable
-     &                           B0(i)
+        IF ( .NOT.Short ) THEN
+          WRITE (errMsg,99007) Prod(j),B0p(i,2),B0p(i,1),B0(i) ! variable
+          CALL mexWarnMsgIdAndTxt('CEA:NEWOF:mexUndef',errMsg)
+          ! WRITE (IOOUT,99007) Prod(j),B0p(i,2),B0p(i,1),B0(i) ! variable
+        ENDIF
       ENDDO
       RETURN
-99001 FORMAT (/' O/F = ',F10.6)
-99002 FORMAT (/,23X,'EFFECTIVE FUEL',5X,'EFFECTIVE OXIDANT',8X,
+99001 FORMAT (' O/F = ',F10.6)
+99002 FORMAT (23X,'EFFECTIVE FUEL',5X,'EFFECTIVE OXIDANT',8X,
      &        'MIXTURE')
 99003 FORMAT (' INTERNAL ENERGY',11X,'u(2)/R',14X,'u(1)/R',14X,'u0/R')
 99004 FORMAT (' ENTHALPY',18X,'h(2)/R',14X,'h(1)/R',15X,'h0/R')
 99005 FORMAT (' (KG-MOL)(K)/KG',4X,E18.8,2E20.8)
-99006 FORMAT (/' KG-FORM.WT./KG',13X,'bi(2)',15X,'bi(1)',15X,'b0i')
+99006 FORMAT (' KG-FORM.WT./KG',13X,'bi(2)',15X,'bi(1)',15X,'b0i')
 99007 FORMAT (1X,A16,3E20.8)
       END
       SUBROUTINE OUT1
@@ -3360,7 +3546,7 @@ C
       EQUIVALENCE (mxx(24),mpnf)
       WRITE (IOOUT,99001) Case !variable
 
-      CALL mexPrintf('Subroutine OUT1 called \n')
+      ! CALL mexWarnMsgTxt('Subroutine OUT1 called \n')
 
       IF ( Moles ) THEN
         WRITE (IOOUT,99002) '   MOLES   ' !header
@@ -3724,6 +3910,7 @@ C PRANDTL NUMBER
 C***********************************************************************
 C READ AND PROCESS REACTANT RECORDS.  CALLED FROM SUBROUTINE INPUT.
 C***********************************************************************
+      USE mexVars
       IMPLICIT NONE
       INCLUDE 'cea.inc'
 C LOCAL VARIABLES
@@ -3739,7 +3926,7 @@ C LOCAL VARIABLES
      &  kk,kr,l,n,nall,nint,nj,ntgas,ntot,pcwt,rcf,rcoefs,rm,sub,t1,t2,
      &  wdone
 C
-      CALL mexPrintf('Subroutine REACT called \n')
+      ! CALL mexWarnMsgTxt('Subroutine REACT called \n')
 
       DO k = 1,2
         wdone(k) = .FALSE.
@@ -3791,12 +3978,16 @@ C IF FUEL, KR = 2
                   dift = DABS(Tt-t1)
                   IF ( dift.GT.01d0 ) THEN
                     IF ( dift.GT.10.d0 ) THEN
-                      WRITE (IOOUT,99001) Rname(n),t1,Tt ! variables
+                      WRITE (errMsg,99001) Rname(n),t1,Tt ! variables
+                      CALL mexWarnMsgIdAndTxt('CEA:REACT:FUEL',errMsg)
+                      ! WRITE (IOOUT,99001) Rname(n),t1,Tt ! variables
                       Nlm = 0
                       hok = .false.
                       GOTO 200
                     ELSE
-                      WRITE (IOOUT,99002) Rname(n),t1,Tt ! warning
+                      WRITE (errMsg,99002) Rname(n),t1,Tt ! variables
+                      CALL mexWarnMsgIdAndTxt('CEA:REACT:FUEL',errMsg)
+                      ! WRITE (IOOUT,99002) Rname(n),t1,Tt ! warning
                       Tt = t1
                       Rtemp(n) = t1
                     ENDIF
@@ -3820,7 +4011,9 @@ C IF FUEL, KR = 2
               ENDDO
  5            IF ( Tt.EQ.0. ) THEN
                 IF ( .NOT.Hp ) GOTO 50
-                WRITE (IOOUT,99004) n ! error
+                WRITE (errMsg,99004) n ! variables
+                CALL mexWarnMsgIdAndTxt('CEA:REACT:FUEL',errMsg)
+                ! WRITE (IOOUT,99004) n ! error
                 Nlm = 0
                 GOTO 200
               ENDIF
@@ -3840,7 +4033,9 @@ C IF FUEL, KR = 2
             ENDIF
  20       CONTINUE
           if (.not.hok) then
-            WRITE (IOOUT,99010) Tt,Rname(n),t1save,t2save ! error
+            WRITE (errMsg,99010) Tt,Rname(n),t1save,t2save ! Warning
+            CALL mexWarnMsgIdAndTxt('CEA:REACT:FUEL',errMsg)
+            ! WRITE (IOOUT,99010) Tt,Rname(n),t1save,t2save ! error
             Energy(n) = ' '
             Nlm = 0
             goto 200
@@ -3883,7 +4078,9 @@ C TEMPORARILY STORE ATOMIC VALENCE IN X.
               GOTO 100
             ENDIF
           ENDDO
-          WRITE (IOOUT,99005) Ratom(n,jj) ! error
+          WRITE (errMsg,99005) Ratom(n,jj) ! error
+          CALL mexWarnMsgIdAndTxt('CEA:REACT:MOLE',errMsg)
+          ! WRITE (IOOUT,99005) Ratom(n,jj) ! error
           Nlm = 0
           GOTO 200
  100    CONTINUE
@@ -3892,9 +4089,13 @@ C TEMPORARILY STORE ATOMIC VALENCE IN X.
           IF ( .NOT.Moles.AND..NOT.wdone(kr) ) THEN
             wdone(kr) = .TRUE.
             Pecwt(n) = 100.
-            WRITE (IOOUT,99006) n ! warning
+            WRITE (errMsg,99006) n ! error
+            CALL mexWarnMsgIdAndTxt('CEA:REACT:MOLE',errMsg)
+            ! WRITE (IOOUT,99006) n ! warning
           ELSE
-            WRITE (IOOUT,99007) n ! error
+            WRITE (errMsg,99007) n ! error
+            CALL mexWarnMsgIdAndTxt('CEA:REACT:MOLE',errMsg)
+            ! WRITE (IOOUT,99007) n ! error
             Nlm = 0
             GOTO 200
           ENDIF
@@ -3961,35 +4162,43 @@ C CALCULATE V+(KR), AND V-(KR)
         ENDDO
         IF ( .NOT.Short ) THEN
           IF ( Moles ) THEN
-            WRITE (IOOUT,99008) ' MOLES ' ! header
+            WRITE (errMsg,99008) ' MOLES '
+            CALL mexWarnMsgIdAndTxt('CEA:REACT:mexUndef',errMsg)
+            ! WRITE (IOOUT,99008) ' MOLES ' ! header
           ELSE
-            WRITE (IOOUT,99008) 'WT.FRAC' ! header
+            WRITE (errMsg,99008) 'WT.FRAC'
+            CALL mexWarnMsgIdAndTxt('CEA:REACT:mexUndef',errMsg)
+            ! WRITE (IOOUT,99008) 'WT.FRAC' ! header
           ENDIF
           DO n = 1,Nreac
-            WRITE (IOOUT,99009) Fox(n),Rname(n),Pecwt(n),Enth(n), ! variables
+            WRITE (errMsg,99009) Fox(n),Rname(n),Pecwt(n),Enth(n), ! variables
      &           Rtemp(n),Dens(n),(Ratom(n,i),Rnum(n,i),i=1,Nfla(n)) 
+            CALL mexWarnMsgIdAndTxt('CEA:REACT:mexUndef',errMsg)
+            ! WRITE (IOOUT,99009) Fox(n),Rname(n),Pecwt(n),Enth(n), ! variables
+    !  &           Rtemp(n),Dens(n),(Ratom(n,i),Rnum(n,i),i=1,Nfla(n)) 
           ENDDO
         ENDIF
       ENDIF
  200  RETURN
-99001 FORMAT (/' REACTANT ',A15,'HAS BEEN DEFINED FOR THE TEMPERATURE', 
-     &  F8.2,'K ONLY.'/' YOUR TEMPERATURE ASSIGNMENT',F8.2,
+99001 FORMAT (' REACTANT ',A15,'HAS BEEN DEFINED FOR THE TEMPERATURE', 
+     &  F8.2,'K ONLY.\n YOUR TEMPERATURE ASSIGNMENT',F8.2,
      &  ' IS MORE THAN 10 K FROM THIS VALUE. (REACT)')
-99002 FORMAT (/' NOTE! REACTANT ',A15,'HAS BEEN DEFINED FOR ',
-     &  'TEMPERATURE',F8.2,'K ONLY.'/' YOUR TEMPERATURE ASSIGNMENT',
+99002 FORMAT (' NOTE! REACTANT ',A15,'HAS BEEN DEFINED FOR ',
+     &  'TEMPERATURE',F8.2,'K ONLY.\n YOUR TEMPERATURE ASSIGNMENT',
      &  F8.2,' IS NOT = BUT <10 K FROM THIS VALUE. (REACT)')
-99003 FORMAT (/' NOTE: ',A15,' IS EITHER NOT IN thermo.lib OR THE',
-     &        ' TEMPERATURE ',/,
+99003 FORMAT (' NOTE: ',A15,' IS EITHER NOT IN thermo.lib OR THE',
+     &        ' TEMPERATURE ','\n',
      &        ' IS OUT OF RANGE FOR THIS SPECIES (REACT)')
-99004 FORMAT (/' TEMPERATURE MISSING FOR REACTANT NO.',I2,'(REACT)')
-99005 FORMAT (/1x,a2,' NOT FOUND IN BLOCKDATA (REACT)')
-99006 FORMAT (/' WARNING!!  AMOUNT MISSING FOR REACTANT',I3,'.',
-     &        /' PROGRAM SETS WEIGHT PERCENT = 100. (REACT)')
-99007 FORMAT (/' AMOUNT MISSING FOR REACTANT NO.',I2,'(REACT)')
-99008 FORMAT (/4x,'REACTANT',10x,A7,3X,'(ENERGY/R),K',3X,
-     &        'TEMP,K  DENSITY'/,8x,'EXPLODED FORMULA')
-99009 FORMAT (1x,a1,': ',a15,f10.6,e15.6,f9.2,f8.4,/8x,5(2x,a2,f8.5))
-99010 FORMAT (/' YOUR ASSIGNED TEMPERATURE',F8.2,'K FOR ',A15,/,
+99004 FORMAT (' TEMPERATURE MISSING FOR REACTANT NO.',I2,'(REACT)')
+99005 FORMAT (1x,a2,' NOT FOUND IN BLOCKDATA (REACT)')
+99006 FORMAT (' WARNING!!  AMOUNT MISSING FOR REACTANT',I3,'.',
+     &        '\n PROGRAM SETS WEIGHT PERCENT = 100. (REACT)')
+99007 FORMAT (' AMOUNT MISSING FOR REACTANT NO.',I2,'(REACT)')
+99008 FORMAT (4x,'REACTANT',10x,A7,3X,'(ENERGY/R),K',3X,
+     &        'TEMP,K  DENSITY\n',8x,'EXPLODED FORMULA')
+99009 FORMAT (1x,a1,': ',a15,f10.6,e15.6,f9.2,f8.4,'\n',
+     &        8x,5(2x,a2,f8.5))
+99010 FORMAT (' YOUR ASSIGNED TEMPERATURE',F8.2,'K FOR ',A15,'\n',
      & 'IS OUTSIDE ITS TEMPERATURE RANGE',F8.2,' TO',F9.2,'K (REACT)')
       END
       SUBROUTINE RKTOUT
@@ -4018,7 +4227,7 @@ C
       EQUIVALENCE (mxx(7),misp)
       DATA exit/11*'EXIT'/
 
-      CALL mexPrintf('Subroutine RKTOUT called \n')
+      ! CALL mexWarnMsgTxt('Subroutine RKTOUT called \n')
 
       IF ( .NOT.Eql ) THEN
         WRITE (IOOUT,99004) ! header
@@ -4223,6 +4432,7 @@ C MOLE (OR MASS) FRACTIONS - FROZEN
 C***********************************************************************
 C EXECUTIVE ROUTINE FOR ROCKET PROBLEMS.
 C***********************************************************************
+      USE mexVars
       IMPLICIT NONE
       INCLUDE 'cea.inc'
 C LOCAL VARIABLES
@@ -4241,7 +4451,7 @@ C LOCAL VARIABLES
 C
       DATA a1l/ - 1.26505/,b1/1.0257/,c1/ - 1.2318/,pa/1.E05/
 
-      CALL mexPrintf('Subroutine ROCKET called \n')
+      ! CALL mexWarnMsgTxt('Subroutine ROCKET called \n')
 
       iplte = Iplt
       isup1 = 1
@@ -4261,7 +4471,9 @@ C
         ELSEIF ( Ma.NE.0. ) THEN
           Iopt = 2
         ELSE
-          WRITE (IOOUT,99001) ! error
+          WRITE (errMsg,99001) ! error
+          CALL mexErrMsgIdAndTxt('CEA:ROCKET:PBLM',errMsg)
+          ! WRITE (IOOUT,99001) ! error
           Tt = 0.
           GOTO 1400
         ENDIF
@@ -4279,11 +4491,15 @@ C
         Subar(1) = Acat
       ELSEIF ( .NOT.Eql.AND.Nfz.GT.1.AND.Nsub.GT.0 ) THEN
         Nsub = 0
-        WRITE (IOOUT,99023) ! warning
+        WRITE (errMsg,99023) ! warning
+        CALL mexWarnMsgIdAndTxt('CEA:ROCKET:FROZEN',errMsg)
+        ! WRITE (IOOUT,99023) ! warning
       ENDIF
       nn = nn + Nsub + Nsup
       IF ( Nfz.GT.2.AND.nn.GT.NCOL-2 ) THEN
-        WRITE (IOOUT,99002) NCOL - 2 ! warning
+        WRITE (errMsg,99002) NCOL - 2 ! warning
+        CALL mexWarnMsgIdAndTxt('CEA:ROCKET:FROZEN',errMsg)
+        ! WRITE (IOOUT,99002) NCOL - 2 ! warning
         Nfz = 1
         Froz = .FALSE.
       ENDIF
@@ -4352,11 +4568,19 @@ C INITIAL ESTIMATE FOR PC (AND ACAT IF NOT ASSIGNED)
             IF ( Acat.GE.1. ) THEN
               pratsv = prat
               IF ( Debugf ) THEN
-                IF ( i.LE.1 ) WRITE (IOOUT,99004) ! header
-                WRITE (IOOUT,99005) i,ppa,Acat ! variables
+                IF ( i.LE.1 ) THEN
+                  WRITE (errMsg,99004) ! warning
+                  CALL mexWarnMsgIdAndTxt('CEA:ROCKET:mexUndef',errMsg)
+                  ! WRITE (IOOUT,99004) ! header
+                ENDIF
+                WRITE (errMsg,99002) i,ppa,Acat ! warning
+                CALL mexWarnMsgIdAndTxt('CEA:ROCKET:mexUndef',errMsg)
+                ! WRITE (IOOUT,99005) i,ppa,Acat ! variables
               ENDIF
             ELSE
-              WRITE (IOOUT,99003) Ma ! error
+              WRITE (errMsg,99003) Ma ! warning
+              CALL mexWarnMsgIdAndTxt('CEA:ROCKET:MDOT',errMsg)
+              ! WRITE (IOOUT,99003) Ma ! error
               Tt = 0.
               GOTO 1400
             ENDIF
@@ -4402,7 +4626,11 @@ C INITIAL ESTIMATE FOR PC (AND ACAT IF NOT ASSIGNED)
         Ttt(2) = Ttt(4)
         Vlm(2) = Vlm(4)
         Wm(2) = Wm(4)
-        IF ( .NOT.Short ) WRITE (IOOUT,99009) ! header
+        IF ( .NOT.Short ) THEN
+          WRITE (errMsg,99009) ! warning
+          CALL mexWarnMsgIdAndTxt('CEA:ROCKET:mexUndef',errMsg)
+          ! WRITE (IOOUT,99009) ! header
+        ENDIF
         GOTO 600
 C INITIALIZE FOR THROAT
  400    IF ( ipp.GT.nipp ) THEN
@@ -4413,11 +4641,17 @@ C THROAT
             Vv = Vlm(nptth)
             pvg = Pp*Vv*Gammas(nptth)
             IF ( pvg.EQ.0. ) THEN
-              WRITE (IOOUT,99010) ! warning
+              WRITE (errMsg,99010) ! warning
+              CALL mexWarnMsgIdAndTxt('CEA:ROCKET:THROAT',errMsg)
+              ! WRITE (IOOUT,99010) ! warning
               GOTO 550
             ELSE
               msq = usq/pvg
-              IF ( Debug(1).OR.Debug(2) ) WRITE (IOOUT,99011) usq,pvg ! variable
+              IF ( Debug(1).OR.Debug(2) ) THEN
+                WRITE (errMsg,99011) usq,pvg ! warning
+                CALL mexWarnMsgIdAndTxt('CEA:ROCKET:DEBUG',errMsg)
+                ! WRITE (IOOUT,99011) usq,pvg ! variable
+              ENDIF
               dh = DABS(msq-1.D0)
               IF ( dh.LE.0.4D-4 ) GOTO 550
               IF ( itrot.GT.0 ) THEN
@@ -4428,21 +4662,29 @@ C THROAT
                 ELSEIF ( tmelt.EQ.0. ) THEN
                   Pp = Pp*(1.D0+msq*Gammas(nptth))/(Gammas(nptth)+1.D0)
                 ELSE
-                  WRITE (IOOUT,99012) ! warning
+                  WRITE (errMsg,99012) ! warning
+                  CALL mexWarnMsgIdAndTxt('CEA:ROCKET:THROAT',errMsg)
+                  ! WRITE (IOOUT,99012) ! warning
                   dlt = DLOG(tmelt/Tt)
                   dd = dlt*Cpr(nptth)/(Enn*Dlvtp(nptth))
                   Pp = Pp*EXP(dd)
                   App(nptth) = P(Ip)/Pp
                   IF ( Fac ) App(nptth) = pinf/Pp
-                  IF ( Eql.AND..NOT.Short ) WRITE (IOOUT,99013) ! variable
-     &                            App(nptth)
+                  IF ( Eql.AND..NOT.Short ) THEN
+                    WRITE (errMsg,99013) App(nptth)! warning
+                    CALL mexWarnMsgIdAndTxt('CEA:ROCKET:mexUndef'
+     &                                      ,errMsg)
+                    ! WRITE (IOOUT,99013) App(nptth)! variable
+                  ENDIF
                   thi = .TRUE.
                   GOTO 250
                 ENDIF
                 GOTO 500
               ELSEIF ( itrot.LT.0 ) THEN
                 IF ( itrot.LT.-19 ) THEN
-                  WRITE (IOOUT,99010) ! warning
+                  WRITE (errMsg,99010) ! warning
+                  CALL mexWarnMsgIdAndTxt('CEA:ROCKET:THROAT',errMsg)
+                  ! WRITE (IOOUT,99010) ! warning
                   GOTO 550
                 ELSE
                   IF ( Npr.NE.npr1 ) GOTO 550
@@ -4450,12 +4692,16 @@ C THROAT
                   GOTO 500
                 ENDIF
               ELSEIF ( Npr.EQ.npr1 ) THEN
-                WRITE (IOOUT,99010) ! warning
+                WRITE (errMsg,99010) ! warning
+                CALL mexWarnMsgIdAndTxt('CEA:ROCKET:THROAT',errMsg)
+                ! WRITE (IOOUT,99010) ! warning
                 GOTO 550
               ELSE
                 dp = DABS(Pp-p1)/20.
                 Pp = DMAX1(Pp,p1)
-                WRITE (IOOUT,99012) ! warning
+                WRITE (errMsg,99012) ! warning
+                CALL mexWarnMsgIdAndTxt('CEA:ROCKET:THROAT',errMsg)
+                ! WRITE (IOOUT,99012) ! warning
                 Pp = Pp - dp
                 GOTO 500
               ENDIF
@@ -4477,14 +4723,22 @@ C THROAT
         thi = .FALSE.
         App(nptth) = ((Gammas(i12)+1.)/2.)
      &               **(Gammas(i12)/(Gammas(i12)-1.))
-        IF ( Eql.AND..NOT.Short ) WRITE (IOOUT,99013) App(nptth) ! variable
+        IF ( Eql.AND..NOT.Short ) THEN
+          WRITE (errMsg,99013) App(nptth)! warning
+          CALL mexWarnMsgIdAndTxt('CEA:ROCKET:mexUndef',errMsg)
+          ! WRITE (IOOUT,99013) App(nptth) ! variable
+        ENDIF
         Pp = pinf/App(nptth)
         Isv = -i12
         GOTO 1200
  500    npr1 = Npr
         App(nptth) = P(Ip)/Pp
         IF ( Fac ) App(nptth) = pinf/Pp
-        IF ( Eql.AND..NOT.Short ) WRITE (IOOUT,99013) App(nptth) ! variable
+        IF ( Eql.AND..NOT.Short ) THEN
+          WRITE (errMsg,99013) App(nptth)! warning
+          CALL mexWarnMsgIdAndTxt('CEA:ROCKET:mexUndef',errMsg)
+          ! WRITE (IOOUT,99013) App(nptth) ! variable
+        ENDIF
         itrot = itrot - 1
         GOTO 250
  550    Awt = Enn*Tt/(Pp*usq**.5)
@@ -4518,12 +4772,16 @@ C PCP ESTIMATES FOR AREA RATIOS
           IF ( (.NOT.Fac.OR.done).AND.Nsub.LE.i01 ) aratio = Supar(Isup)
           IF ( .NOT.Eql.AND.Nfz.GE.3 ) THEN
             IF ( aratio.LE.Aeat(Nfz) ) THEN
-              WRITE (IOOUT,99014) Nfz ! warning
+              WRITE (errMsg,99014) Nfz! warning
+              CALL mexWarnMsgIdAndTxt('CEA:ROCKET:FROZEN',errMsg)
+              ! WRITE (IOOUT,99014) Nfz ! warning
               GOTO 1050
             ENDIF
           ENDIF
           IF (aratio .LT. 1.d0 ) THEN
-            WRITE (IOOUT,99025)  ! error
+            WRITE (errMsg,99025) ! warning
+            CALL mexWarnMsgIdAndTxt('CEA:ROCKET:AR',errMsg)
+            ! WRITE (IOOUT,99025)  ! error
             GOTO 1050
           ENDIF
           eln = DLOG(aratio)
@@ -4544,14 +4802,19 @@ C PCP ESTIMATES FOR AREA RATIOS
 C TEST FOR CONVERGENCE ON AREA RATIO.
         ELSEIF ( Gammas(Npt).GT.0. ) THEN
           check = .00004
-          IF ( Debug(Npt) ) WRITE (IOOUT,99016) itnum,aratio,Aeat(Npt), ! variable
-     &                             App(Npt),dlnp
+          IF ( Debug(Npt) ) THEN
+            WRITE (errMsg,99016) itnum,aratio,Aeat(Npt),App(Npt),dlnp ! warning
+            CALL mexWarnMsgIdAndTxt('CEA:ROCKET:DEBUG',errMsg)
+            ! WRITE (IOOUT,99016) itnum,aratio,Aeat(Npt),App(Npt),dlnp ! variable
+          ENDIF
           IF ( DABS(Aeat(Npt)-aratio)/aratio.LE.check ) GOTO 900
           IF ( ABS(dlnp).LT..00004 ) GOTO 900
           aeatl = DLOG(Aeat(Npt))
           itnum = itnum + 1
           IF ( itnum.GT.10 ) THEN
-            WRITE (IOOUT,99017) aratio ! warning
+            WRITE (errMsg,99017) aratio ! warning
+            CALL mexWarnMsgIdAndTxt('CEA:ROCKET:AR',errMsg)
+            ! WRITE (IOOUT,99017) aratio ! warning
             GOTO 900
           ELSE
 C IMPROVED PCP ESTIMATES.
@@ -4560,7 +4823,9 @@ C IMPROVED PCP ESTIMATES.
             GOTO 850
           ENDIF
         ELSE
-          WRITE (IOOUT,99015) ! warning
+          WRITE (errMsg,99015) ! warning
+          CALL mexWarnMsgIdAndTxt('CEA:ROCKET:AR',errMsg)
+          ! WRITE (IOOUT,99015) ! warning
           Npt = Npt - 1
           IF ( Nsub.LE.0 ) isup1 = 100
           IF ( Nsub.LT.0. ) Nsup = Isup - 1
@@ -4593,9 +4858,14 @@ C PRESSURE AND CONTRACTION RATIO. IMPROVED ESTIMATE FOR PC
               test = (pinj-pinjas)/pinjas
               pcpa = pinf*pa
               IF ( Debugf ) THEN
-                WRITE (IOOUT,99006) ! header
-                WRITE (IOOUT,99007) niter,test,pinjas,pinj,pcpa,ppa, ! variable
+                WRITE (errMsg,99006) ! warning
+                CALL mexWarnMsgIdAndTxt('CEA:ROCKET:DEBUG',errMsg)
+                ! WRITE (IOOUT,99006) ! header
+                WRITE (errMsg,99007) niter,test,pinjas,pinj,pcpa,ppa, ! variable
      &                          acatsv,Acat
+                CALL mexWarnMsgIdAndTxt('CEA:ROCKET:DEBUG',errMsg)
+    !             WRITE (IOOUT,99007) niter,test,pinjas,pinj,pcpa,ppa,
+    !  &                          acatsv,Acat
               ENDIF
               IF ( ABS(test).LT.0.00002 ) GOTO 350
               prat = pinjas/pinj
@@ -4617,9 +4887,14 @@ C AND ACAT
               test = (pinj-pinjas)/pinjas
               pcpa = pinf*pa
               IF ( Debugf ) THEN
-                WRITE (IOOUT,99006) ! header
-                WRITE (IOOUT,99007) niter,test,pinjas,pinj,pcpa,ppa, ! variable
+                WRITE (errMsg,99006) ! warning
+                CALL mexWarnMsgIdAndTxt('CEA:ROCKET:DEBUG',errMsg)
+                ! WRITE (IOOUT,99006) ! header
+                WRITE (errMsg,99007) niter,test,pinjas,pinj,pcpa,ppa, ! variable
      &                          acatsv,Acat
+                CALL mexWarnMsgIdAndTxt('CEA:ROCKET:DEBUG',errMsg)
+    !             WRITE (IOOUT,99007) niter,test,pinjas,pinj,pcpa,ppa,
+    !  &                          acatsv,Acat
               ENDIF
               IF ( ABS(test).LT.0.00002 ) GOTO 350
               pjrat = pinj/pinjas
@@ -4634,7 +4909,11 @@ C AND ACAT
                 pratsv = prat
                 pjrat = 1.
                 prat = (b1+c1*Acat)/(1.+a1l*Acat)
-                IF ( Debugf ) WRITE (IOOUT,99008) pcpa,Acat,pjrat,pracat ! variable
+                IF ( Debugf ) THEN
+                  WRITE (errMsg,99008) pcpa,Acat,pjrat,pracat ! variable
+                  CALL mexWarnMsgIdAndTxt('CEA:ROCKET:DEBUG',errMsg)
+                  ! WRITE (IOOUT,99008) pcpa,Acat,pjrat,pracat ! variable
+                ENDIF
               ENDDO
               GOTO 300
             ENDIF
@@ -4679,7 +4958,11 @@ C TEST FOR OUTPUT -- SCHEDULES COMPLETE OR NPT=NCOL
         iplte = MAX(iplte,Iplt)
         dlnp = 1.
         IF ( Tt.EQ.0. ) Area = .FALSE.
-        IF ( .NOT.Eql.AND.Tt.EQ.0. ) WRITE (IOOUT,99018) ! warning
+        IF ( .NOT.Eql.AND.Tt.EQ.0. ) THEN
+          WRITE (errMsg,99018) ! warning
+          CALL mexWarnMsgIdAndTxt('CEA:ROCKET:TEMP',errMsg)
+          ! WRITE (IOOUT,99018) ! warning
+        ENDIF
         IF ( Isv.EQ.0 ) THEN
 C PCP, SUBAR, AND SUPAR SCHEDULES COMPLETED
           IF ( Nsub.LT.0 ) Nsub = -Nsub
@@ -4697,17 +4980,21 @@ C SET UP FOR FROZEN.
           IF ( Nfz.EQ.1 ) GOTO 450
           IF ( Nsub.GT.0 ) THEN
             Nsub = -Nsub
-            WRITE (IOOUT,99023) ! warning
+            WRITE (errMsg,99023) ! warning
+            CALL mexWarnMsgIdAndTxt('CEA:ROCKET:FROZEN',errMsg)
+            ! WRITE (IOOUT,99023) ! warning
           ENDIF
           IF ( App(Nfz).LT.App(nptth) ) THEN
-            WRITE (IOOUT,99024) ! warning
+            WRITE (errMsg,99024) ! warning
+            CALL mexWarnMsgIdAndTxt('CEA:ROCKET:FROZEN',errMsg)
+            ! WRITE (IOOUT,99024) ! warning
           ELSE
             IF ( Nfz.LT.Npp ) GOTO 1200
             GOTO 700
           ENDIF
           GOTO 1300
         ELSE
-          IF ( Eql ) WRITE (IOOUT,99019) ! spaces
+          ! IF ( Eql ) WRITE (IOOUT,99019) ! spaces
           Npt = nptth
         ENDIF
 C SET INDICES AND ESTIMATES FOR NEXT POINT.
@@ -4727,7 +5014,9 @@ C BOTH SOLID AND LIQUID WERE INCLUDED.  JULY 27, 1990.
             App(Npt) = Pcp(ipp-nptth)
             IF ( Fac ) App(Npt) = App(Npt)*pinf/Ppp(1)
             IF ( .NOT.Eql.AND.App(Npt).LT.App(Nfz) ) THEN
-              WRITE (IOOUT,99020) Nfz ! warning
+              WRITE (errMsg,99020) Nfz ! warning
+              CALL mexWarnMsgIdAndTxt('CEA:ROCKET:FROZEN',errMsg)
+              ! WRITE (IOOUT,99020) Nfz ! warning
               GOTO 1250
             ENDIF
           ENDIF
@@ -4736,12 +5025,16 @@ C BOTH SOLID AND LIQUID WERE INCLUDED.  JULY 27, 1990.
             IF ( Area ) THEN
               IF ( isub.LE.Nsub.AND.isub.GT.i01.AND.aratio.GE.Aeat(2) )
      &             THEN
-                WRITE (IOOUT,99021) aratio,Aeat(2) ! warning
+                WRITE (errMsg,99021) aratio,Aeat(2) ! warning
+                CALL mexWarnMsgIdAndTxt('CEA:ROCKET:SUBAR',errMsg)
+                ! WRITE (IOOUT,99021) aratio,Aeat(2) ! warning
                 Npt = Npt - 1
                 GOTO 1000
               ENDIF
             ELSEIF ( Npt.GT.nptth.AND.Pcp(ipp-3).LT.Ppp(1)/Ppp(2) ) THEN
-              WRITE (IOOUT,99022) Pcp(ipp-3),Ppp(1)/Ppp(2) ! warning
+              WRITE (errMsg,99022) Pcp(ipp-3),Ppp(1)/Ppp(2) ! warning
+              CALL mexWarnMsgIdAndTxt('CEA:ROCKET:PIP',errMsg)
+              ! WRITE (IOOUT,99022) Pcp(ipp-3),Ppp(1)/Ppp(2) ! warning
               Npt = Npt - 1
               GOTO 650
             ENDIF
@@ -4754,7 +5047,7 @@ C 1) CHAMBER PRESSURES(IP = NP)
 C 2) CHAMBER TEMPERATURES(IT = NT)
 C 3) O/F VALUES(IOF = NOF)
         IF ( Ip.EQ.Np.AND.It.EQ.Nt.AND.iof.EQ.Nof ) GOTO 1400
-        WRITE (IOOUT,99019) ! empty space
+        ! WRITE (IOOUT,99019) ! empty space
         CALL SETEN
         Tt = Ttt(i12)
       ENDDO
@@ -4767,13 +5060,13 @@ C 3) O/F VALUES(IOF = NOF)
       ENDIF
  1400 Iplt = MAX(Iplt,iplte)
       RETURN
-99001 FORMAT (/' FATAL ERROR!! EITHER mdot OR ac/at MISSING ',
+99001 FORMAT (' FATAL ERROR!! EITHER mdot OR ac/at MISSING ',
      &        'FOR fac PROBLEM (ROCKET)')
-99002 FORMAT (/' WARNING!!  nfz NOT ALLOWED TO BE > 2 IF THE TOTAL',/,
+99002 FORMAT (' WARNING!!  nfz NOT ALLOWED TO BE > 2 IF THE TOTAL\n',
      &        ' NUMBER OF POINTS IS >',i3,' (ROCKET)')
-99003 FORMAT (/' INPUT VALUE OF mdot/a =',F12.3,' IS TOO LARGE.'/
+99003 FORMAT (' INPUT VALUE OF mdot/a =',F12.3,' IS TOO LARGE.\n'
      &        ' GIVES CONTRACTION RATIO ESTIMATE LESS THAN 1 (ROCKET)')
-99004 FORMAT (/'  ITERATION',9X,'PC',7X,'CONTRACTION RATIO')
+99004 FORMAT ('  ITERATION',9X,'PC',7X,'CONTRACTION RATIO')
 99005 FORMAT (5X,I2,7X,F12.2,3X,F12.6)
 99006 FORMAT (' ITER',3X,'TEST',3X,'ASSIGNED PINJ',1x,'CALC PINJ',5X,
      &        'PC',7X,'P AT ACAT',3X,'PREV ACAT',2X,'ACAT')
@@ -4781,45 +5074,46 @@ C 3) O/F VALUES(IOF = NOF)
 99008 FORMAT (' NEW PC = ',F10.2,2X,'NEW ACAT = ',F9.6,2X,'PJRAT =',
      &        F10.7,' PRACAT =',F10.7)
 99009 FORMAT (' END OF CHAMBER ITERATIONS')
-99010 FORMAT (/' WARNING!!  DIFFICULTY IN LOCATING THROAT (ROCKET)')
-99011 FORMAT (/' USQ=',E15.8,5X,'PVG=',E15.8)
-99012 FORMAT (/' WARNING!!  DISCONTINUITY AT THE THROAT (ROCKET)')
+99010 FORMAT (' WARNING!!  DIFFICULTY IN LOCATING THROAT (ROCKET)')
+99011 FORMAT (' USQ=',E15.8,5X,'PVG=',E15.8)
+99012 FORMAT (' WARNING!!  DISCONTINUITY AT THE THROAT (ROCKET)')
 99013 FORMAT (' Pinf/Pt =',F9.6)
-99014 FORMAT (/,' WARNING!! FOR FROZEN PERFORMANCE, POINTS WERE OMITTED'
-     &        ,' WHERE THE ASSIGNED',/,' SUPERSONIC AREA RATIOS WERE ',
+99014 FORMAT (' WARNING!! FOR FROZEN PERFORMANCE, POINTS WERE OMITTED'
+     &        ,' WHERE THE ASSIGNED \n SUPERSONIC AREA RATIOS WERE ',
      &        'LESS THAN THE VALUE AT POINT nfz =',I3,' (ROCKET)')
-99015 FORMAT (/' WARNING!!  AREA RATIO CALCULATION CANNOT BE DONE ',
-     &        'BECAUSE GAMMAs',/,' CALCULATION IMPOSSIBLE. (ROCKET)')
-99016 FORMAT (/' ITER=',I2,2X,'ASSIGNED AE/AT=',F14.7,3X,'AE/AT=',F14.7,
-     &        /,2X,'PC/P=',F14.7,2X,'DELTA LN PCP=',F14.7)
-99017 FORMAT (/' WARNING!!  DID NOT CONVERGE FOR AREA RATIO =',F10.5,
+99015 FORMAT (' WARNING!!  AREA RATIO CALCULATION CANNOT BE DONE ',
+     &        'BECAUSE GAMMAs\n CALCULATION IMPOSSIBLE. (ROCKET)')
+99016 FORMAT (' ITER=',I2,2X,'ASSIGNED AE/AT=',F14.7,3X,'AE/AT=',F14.7,
+     &        '\n',2X,'PC/P=',F14.7,2X,'DELTA LN PCP=',F14.7)
+99017 FORMAT (' WARNING!!  DID NOT CONVERGE FOR AREA RATIO =',F10.5,
      &        ' (ROCKET)')
-99018 FORMAT (/' WARNING!!  CALCULATIONS WERE STOPPED BECAUSE NEXT ',
-     &        'POINT IS MORE',/,' THAN 50 K BELOW THE TEMPERATURE',
+99018 FORMAT (' WARNING!!  CALCULATIONS WERE STOPPED BECAUSE NEXT ',
+     &        'POINT IS MORE\n THAN 50 K BELOW THE TEMPERATURE',
      &        ' RANGE OF A CONDENSED SPECIES (ROCKET)')
 99019 FORMAT (////)
-99020 FORMAT (/,' WARNING!! FOR FROZEN PERFORMANCE, POINTS WERE OMITTED'
-     &        ,' WHERE THE ASSIGNED',/,
+99020 FORMAT (' WARNING!! FOR FROZEN PERFORMANCE, POINTS WERE OMITTED'
+     &        ,' WHERE THE ASSIGNED\n'
      &        ' PRESSURE RATIOS WERE LESS THAN ',
      &        'THE VALUE AT POINT nfz =',I3,' (ROCKET)')
-99021 FORMAT (/' WARNING!!  ASSIGNED subae/at =',f10.5,' IS NOT ',
-     &        'PERMITTED TO BE GREATER'/' THAN ac/at =',f9.5,
+99021 FORMAT (' WARNING!!  ASSIGNED subae/at =',f10.5,' IS NOT ',
+     &        'PERMITTED TO BE GREATER\n THAN ac/at =',f9.5,
      &        '.  POINT OMITTED (ROCKET)')
-99022 FORMAT (/' WARNING!!  ASSIGNED pip =',F10.5,
-     &        ' IS NOT PERMITTED'/' TO BE LESS THAN  Pinj/Pc =',f9.5,
+99022 FORMAT (' WARNING!!  ASSIGNED pip =',F10.5,
+     &        ' IS NOT PERMITTED\n TO BE LESS THAN  Pinj/Pc =',f9.5,
      &        '. POINT OMITTED',' (ROCKET)')
-99023 FORMAT (/' WARNING!!  FOR FROZEN PERFORMANCE, SUBSONIC AREA ',/,
+99023 FORMAT (' WARNING!!  FOR FROZEN PERFORMANCE, SUBSONIC AREA \n',
      &       ' RATIOS WERE OMITTED SINCE nfz IS GREATER THAN 1 (ROCKET)'
      &       )
-99024 FORMAT (/' WARNING!!  FREEZING IS NOT ALLOWED AT A SUBSONIC ',
-     &        'PRESSURE RATIO FOR nfz GREATER'/' THAN 1. FROZEN ',
+99024 FORMAT (' WARNING!!  FREEZING IS NOT ALLOWED AT A SUBSONIC ',
+     &        'PRESSURE RATIO FOR nfz GREATER\n THAN 1. FROZEN ',
      &        'PERFORMANCE CALCULATIONS WERE OMITTED (ROCKET)')
-99025 FORMAT (/' AN ASSIGNED AREA RATIO IS < 1 (ROCKET)' )
+99025 FORMAT (' AN ASSIGNED AREA RATIO IS < 1 (ROCKET)' )
       END
       SUBROUTINE SEARCH
 C***********************************************************************
 C SEARCH THERMO.LIB FOR THERMO DATA FOR SPECIES TO BE CONSIDERED.
 C***********************************************************************
+      USE mexVars
       IMPLICIT NONE
       INCLUDE 'cea.inc'
 C LOCAL VARIABLES
@@ -4833,7 +5127,7 @@ C LOCAL VARIABLES
       SAVE b,bin,date,el,i,i5,ifaz,ii,ir,itot,j,jj,jk,k,lineb,nall,ne,
      &  nint,npure,nrec,ntgas,ntot,pure,spece,sub,t1,t2,thermo,trdata
 C
-      CALL mexPrintf('Subroutine SEARCH called \n')
+      ! CALL mexWarnMsgTxt('Subroutine SEARCH called \n')
 
       Nc = 0
       ne = 0
@@ -4939,7 +5233,9 @@ C FINISHED READING THERMO DATA FROM I/O UNIT IOTHM.
       Ngp1 = Ng + 1
       IF ( Ngc.LT.Nonly ) THEN
         DO k = Ngc + 1,Nonly
-          WRITE (IOOUT,99001) Prod(k) ! warning
+          WRITE (errMsg,99001) Prod(k) ! warning
+          CALL mexWarnMsgIdAndTxt('CEA:SEARCH:IOTHM',errMsg)
+          ! WRITE (IOOUT,99001) Prod(k) ! warning
         ENDDO
       ENDIF
 C FIND MISSING ELEMENTS (IF ANY) FOR COMPONENTS
@@ -4973,21 +5269,30 @@ C ARE ALL ELEMENTS IN PRODUCT SPECIES?
           IF ( A(i,j).NE.0. ) GOTO 300
           ii = i
         ENDDO
-        WRITE (IOOUT,99002) Elmt(ii) ! error
+        WRITE (errMsg,99002) Elmt(ii) ! error
+        CALL mexErrMsgIdAndTxt('CEA:SEARCH:ELEM',errMsg)
+        ! WRITE (IOOUT,99002) Elmt(ii) ! error
         Ngc = 0
         GOTO 600
  300  CONTINUE
 C WRITE POSSIBLE PRODUCT LIST
       IF ( .NOT.Short ) THEN
-        WRITE (IOOUT,99003) Thdate ! warning
+        WRITE (errMsg,99003) Thdate ! warning
+        CALL mexWarnMsgIdAndTxt('CEA:SEARCH:PROD',errMsg)
+        ! WRITE (IOOUT,99003) Thdate ! warning
         DO i = 1,Ngc,3
           i5 = i + 2
           IF ( Ngc.LT.i5 ) i5 = Ngc
-          WRITE (IOOUT,99004) (date(j),Prod(j),j=i,i5) ! variable
+          WRITE (errMsg,99004) (date(j),Prod(j),j=i,i5) ! variable
+          CALL mexWarnMsgTxt('called 99004 from SEARCH')
+          CALL mexWarnMsgTxt(errMsg)
+          ! WRITE (IOOUT,99004) (date(j),Prod(j),j=i,i5) ! variable
         ENDDO
       ENDIF
       GOTO 600
- 400  WRITE (IOOUT,99005) !error
+ 400  WRITE (errMsg,99005) !error
+      CALL mexWarnMsgIdAndTxt('CEA:SEARCH:STORAGE',errMsg)
+!  400  WRITE (IOOUT,99005) !error
       Ngc = 0
       GOTO 600
 C SEARCH FOR TRANSPORT PROPERTIES FOR THIS CHEMICAL SYSTEM
@@ -4997,7 +5302,11 @@ C SEARCH FOR TRANSPORT PROPERTIES FOR THIS CHEMICAL SYSTEM
       Ntape = 0
       npure = 0
       lineb = 1
-      IF ( .NOT.Short ) WRITE (IOOUT,99006) ! warning
+      IF ( .NOT.Short ) THEN
+        WRITE (errMsg,99006)
+        CALL mexWarnMsgIdAndTxt('CEA:SEARCH:mexUndef',errMsg)
+        ! WRITE (IOOUT,99006) ! warning
+      ENDIF
       READ (IOTRN) nrec
       DO ir = 1,nrec
         READ (IOTRN) spece,trdata
@@ -5030,32 +5339,40 @@ C WRITE NAMES FOR PURE SPECIES.
  500    WRITE (IOSCH) jj,trdata
         Ntape = Ntape + 1
  550    IF ( npure.NE.0.AND.(npure.GE.6.OR.ir.GE.nrec) ) THEN
-          IF ( .NOT.Short ) WRITE (IOOUT,99007) (pure(jk),jk=1,npure) ! variable
+          IF ( .NOT.Short ) THEN
+            WRITE (errMsg,99007) (pure(jk),jk=1,npure) ! variable
+            CALL mexWarnMsgIdAndTxt('CEA:SEARCH:mexUndef',errMsg)
+            ! WRITE (IOOUT,99007) (pure(jk),jk=1,npure) ! variable
+          ENDIF
           npure = 0
         ENDIF
       ENDDO
       lineb = lineb - 1
       IF ( .NOT.Short ) THEN
-        WRITE (IOOUT,99008) ! header
+        WRITE (errMsg,99008) ! header
+        CALL mexWarnMsgIdAndTxt('CEA:SEARCH:mexUndef',errMsg)
+        ! WRITE (IOOUT,99008) ! header
         DO j = 1,lineb
+          WRITE (errMsg,99009) (bin(i,j),i=1,2) ! variable
+          CALL mexWarnMsgIdAndTxt('CEA:SEARCH:mexUndef',errMsg)
           WRITE (IOOUT,99009) (bin(i,j),i=1,2) ! variable
         ENDDO
       ENDIF
-      WRITE (IOOUT,99010) ! empty line
+      ! WRITE (IOOUT,99010) ! empty line
  600  RETURN
-99001 FORMAT (/' WARNING!!  ',A15,' NOT A PRODUCT IN thermo.lib FILE ',
+99001 FORMAT (' WARNING!!  ',A15,' NOT A PRODUCT IN thermo.lib FILE ',
      &        '(SEARCH)')
-99002 FORMAT (/' PRODUCT SPECIES CONTAINING THE ELEMENT',A3,' MISSING',
-     &        //,13x,'FATAL ERROR (SEARCH)')
-99003 FORMAT (/2x,'SPECIES BEING CONSIDERED IN THIS SYSTEM',
-     &        /' (CONDENSED PHASE MAY HAVE NAME LISTED SEVERAL TIMES)',
-     &        /'  LAST thermo.inp UPDATE: ',A10,/)
+99002 FORMAT (' PRODUCT SPECIES CONTAINING THE ELEMENT',A3,' MISSING',
+     &        '\n',13x,'FATAL ERROR (SEARCH)')
+99003 FORMAT (2x,'SPECIES BEING CONSIDERED IN THIS SYSTEM',
+     &        '\n (CONDENSED PHASE MAY HAVE NAME LISTED SEVERAL TIMES)',
+     &        '\n  LAST thermo.inp UPDATE: ',A10,'\n')
 99004 FORMAT (3(2X,A6,2X,A15))
-99005 FORMAT (/' INSUFFICIENT STORAGE FOR PRODUCTS-SEE RP-1311,',
-     &        /'   PART 2, PAGE 39. (SEARCH)')
-99006 FORMAT (/' SPECIES WITH TRANSPORT PROPERTIES'//8X,'PURE SPECIES'/)
+99005 FORMAT (' INSUFFICIENT STORAGE FOR PRODUCTS-SEE RP-1311,',
+     &        '\n   PART 2, PAGE 39. (SEARCH)')
+99006 FORMAT (' SPECIES WITH TRANSPORT PROPERTIES\n'8X,'PURE SPECIES')
 99007 FORMAT (4(2x,A16))
-99008 FORMAT (/'     BINARY INTERACTIONS'/)
+99008 FORMAT ('     BINARY INTERACTIONS')
 99009 FORMAT (5X,2A16)
 99010 FORMAT ()
       END
@@ -5076,7 +5393,7 @@ C LOCAL VARIABLES
       REAL*8 DEXP
       SAVE j,lsav,tsave
 C
-      CALL mexPrintf('Subroutine SETEN called \n')
+      ! CALL mexWarnMsgTxt('Subroutine SETEN called \n')
 
       IF ( Isv.LT.0 ) THEN
 C FIRST T--SAVE COMPOSITIONS FOR FUTURE POINTS WITH THIS T
@@ -5158,7 +5475,7 @@ C LOCAL VARIABLES
      &  mis,mu12rt,n,p1,p21,p21l,p2p1,pmn,refl,rho12,rho52,rrho,seql,sg,
      &  srefl,t1,t21,t21l,t2t1,ttmax,u1u2,uis,utwo,uu,wmx,ww
 C
-      CALL mexPrintf('Subroutine SHCK called \n')
+      CALL mexWarnMsgTxt('Subroutine SHCK called \n')
 
       IF ( Trace.EQ.0. ) Trace = 5.E-9
       Tp = .TRUE.
@@ -5561,7 +5878,7 @@ C
       EQUIVALENCE (Tp,Tv)
       EQUIVALENCE (Sp,Sv)
 
-      CALL mexPrintf('Subroutine THERMP called \n')
+      CALL mexWarnMsgTxt('Subroutine THERMP called \n')
       
       Eql = .TRUE.
       DO 100 iof = 1,Nof
@@ -5646,7 +5963,7 @@ C LOCAL VARIABLES
      &  prop,qc,ratio,setx,stcf,stcoef,te,testen,testot,total,trc,wmols,
      &  wmred,xsel,xss
 C
-      CALL mexPrintf('Subroutine TRANIN called \n')
+      CALL mexWarnMsgTxt('Subroutine TRANIN called \n')
 
       IF ( .NOT.Eql ) THEN
         IF ( .NOT.Shock ) THEN
@@ -5928,7 +6245,7 @@ C LOCAL VARIABLES
       SAVE cpreac,delh,gmat,i,i1,j,jj,k,m,mm,nlmm,nmm,phi,psi,reacon,
      &  rtpd,stx,stxij,sumc,sumv,wtmol,xskm
 C
-      CALL mexPrintf('Subroutine TRANP called \n')
+      CALL mexWarnMsgTxt('Subroutine TRANP called \n')
 
       CALL TRANIN
 C CALCULATE VISCOSITY AND FROZEN THERMAL CONDUCTIVITY
@@ -6139,7 +6456,7 @@ C LOCAL VARIABLES
      &       tgl(4),thermo(9,3),tinf,tl(2),ttl,tx
       REAL*8 DBLE,DLOG
 C
-      CALL mexPrintf('Subroutine UTHERM called \n')
+      CALL mexWarnMsgTxt('Subroutine UTHERM called \n')
 
       ngl = 0
       ns = 0
@@ -6352,7 +6669,7 @@ C LOCAL VARIABLES
 C
       EQUIVALENCE (tc(1),trcoef(1,1,1))
 
-      CALL mexPrintf('Subroutine UTRAN called \n')
+      CALL mexWarnMsgTxt('Subroutine UTRAN called \n')
 
       ns = 0
       REWIND IOSCH
@@ -6417,7 +6734,7 @@ C LOCAL VARIABLES
       REAL*8 DABS
       SAVE i,k,vi
 C
-      CALL mexPrintf('Subroutine VARFMT called \n')
+      ! CALL mexWarnMsgTxt('Subroutine VARFMT called \n')
 
       DO i = 1,Npt
         vi = DABS(Vx(i))

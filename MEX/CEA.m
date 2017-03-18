@@ -43,7 +43,7 @@ classdef CEA < handle
                 error('thermo.lib and trans.lib must be in the same directory')
             end
 
-            inputFile = 'wrapper'
+            inputFile = 'wrapper';
             if ismac
                 inputFile = strcat('/',inputFile);
             elseif isunix
@@ -54,7 +54,7 @@ classdef CEA < handle
                 error('Platform not supported')
             end  
             data = cea2(obj.ioinp,inputFile,thermoPath);
-            obj.data
+            obj.data = data;
             return;
         end
         function setFuel(obj, fuels, fuelWeights, fuelTemps)

@@ -1,3 +1,5 @@
+clear all;
+close all;
 % currentpath = which('CEA.m');
 % [pathstr,~,~] = fileparts(currentpath);
 test = CEA;

@@ -11,3 +11,6 @@ CEA2.f
 	UTRAN
 6232	READ (IOINP,99001) tname,vvl,nv,cc,ncc
 6247	READ (IOINP,99002) vorc,tcin
+
+
+MAKE WARNINGS APEAR!!!!
