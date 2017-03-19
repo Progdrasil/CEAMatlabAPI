@@ -1,4 +1,7 @@
 function data = run(obj)
+    if obj.Debug
+        c2 = clock;
+    end
     try
         thermoFind = which('thermo.lib');
         [thermoPath,~,~] = fileparts(thermoFind);
@@ -26,6 +29,10 @@ function data = run(obj)
         error('Platform not supported')
     end  
     data = cea2(obj.ioinp,inputFile,thermoPath);
+    if obj.Debug
+        c2 = clock - c2;
+        fprintf('time to run CEA = %16.15e sec \n',c2(end))
+    end
     obj.data = data;
     return;
 end

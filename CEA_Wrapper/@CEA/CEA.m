@@ -33,7 +33,7 @@ classdef CEA < handle
         data = run(obj)
         setFuel(obj, fuels, fuelWeights, fuelTemps)
         setOxid(obj, oxids, oxidWeights, oxidTemps)
-        [ data ] = ReadOutput(obj, fileStr )
+        data = ReadOutput(obj, fileStr )
     end
     
 end

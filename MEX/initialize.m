@@ -16,6 +16,7 @@ test.setFuel('paraffin' , 100, 298.15);
 % test.setFuel({'paraffin' 'CH4' 'RP-1'} , [50 25 25], [298.15 298.15 298.15]);
 test.setOxid('N2O', 100, 298.15);
 % test.setOxid({'N2O' 'O2(L)'}, [75 25],[298.15 90.1]);
+test.Debug = true;
 
 ioinp = test.input.rocket;
 % data = test.run;

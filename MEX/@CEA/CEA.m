@@ -10,10 +10,11 @@ classdef CEA < handle
         presUnit = 'psia';
         supar;
         PcPe;
+        Debug = false;
 
     end
     
-    properties (SetAccess = ?input_class)
+    properties (Access = ?input_class)
         fuel;
         fuelWt;
         fuelTemp;
