@@ -545,6 +545,7 @@ C INFORMATION USED IN VARIABLE OUTPUT FORMAT
 C***********************************************************************
 C CALCULATES THERMODYNAMIC PROPERTIES FOR INDIVIDUAL SPECIES
 C***********************************************************************
+      USE mexVars
       IMPLICIT NONE
       INCLUDE 'cea.inc'
 C LOCAL VARIABLES
@@ -1408,12 +1409,17 @@ C CHECK ON ELECTRON BALANCE
                     IF ( A(ls,j).NE.0. ) Enln(j) = Enln(j) + A(ls,j)
      &                   *dpie
                   ENDDO
-                  IF ( Debug(Npt) ) WRITE (IOOUT,99016) iter,dpie !variables
+                  IF ( Debug(Npt) ) 
+                    WRITE (errMsg,99016) iter,dpie !variables
+                    CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:DEBUG',errMsg)
+                    ! WRITE (IOOUT,99016) iter,dpie !variables
                   IF ( DABS(dpie).GT..0001 ) THEN
                     X(le) = X(le) + dpie
                     iter = iter + 1
                     IF ( iter.LE.80 ) GOTO 566
-                    WRITE (IOOUT,99017) ! warning
+                    WRITE (errMsg,99017) ! warning
+                    CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:CONV',errMsg)
+                    ! WRITE (IOOUT,99017) ! warning
                     GOTO 1500
                   ELSEIF ( Elmt(Nlm).EQ.'E'.AND.pie.NE.0. ) THEN
                     Nlm = Nlm - 1
@@ -1449,14 +1455,18 @@ C PRESSURE DERIVATIVE--CONVG=T, PDERIV=T
 C SINGULAR MATRIX
       ELSE
         IF ( Convg ) THEN
-          WRITE (IOOUT,99007) ! header
+          WRITE (errMsg,99007) ! header
+          CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:dMat',errMsg)
+          ! WRITE (IOOUT,99007) ! header
           Dlvpt(Npt) = -1.
           Dlvtp(Npt) = 1.
           Cpr(Npt) = Cpsum
           Gammas(Npt) = -1./(Dlvpt(Npt)+(Dlvtp(Npt)**2)*Enn/Cpr(Npt))
           GOTO 1400
         ELSE
-          WRITE (IOOUT,99009) numb,Msing ! variables
+          WRITE (errMsg,99009) numb,Msing ! variables
+          CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:MatIt',errMsg)
+          ! WRITE (IOOUT,99009) numb,Msing ! variables
           lsing = Msing
           ixsing = ixsing + 1
           IF ( ixsing.LE.8 ) THEN
@@ -1482,7 +1492,9 @@ C SINGULAR MATRIX
                 ENDIF
  570          CONTINUE
               IF ( j.GT.0 ) THEN
-                WRITE (IOOUT,99020) !header
+                WRITE (errMsg,99020) !header
+                CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:RM',errMsg)
+                ! WRITE (IOOUT,99020) !header
                 GOTO 1000
               ENDIF
             ELSEIF ( .NOT.Hp.OR.Npt.NE.1.OR.Nc.EQ.0.OR.Tt.GT.100. ) THEN
@@ -1490,7 +1502,9 @@ C SINGULAR MATRIX
                 IF ( Msing.LT.Iq1 ) THEN
                   IF ( reduce.AND.Msing.LE.Nlm ) THEN
                     IF ( Nlm.LT.lelim ) GOTO 1500
-                    WRITE (IOOUT,99010) Npt,Elmt(Nlm) !variables
+                    WRITE (errMsg,99010) Npt,Elmt(Nlm) !variables
+                    CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:REDUC',errMsg)
+                    ! WRITE (IOOUT,99010) Npt,Elmt(Nlm) !variables
                     Nlm = Nlm - 1
                     GOTO 500
                   ELSEIF ( Msing.LE.Nlm ) THEN
@@ -1528,7 +1542,9 @@ C REMOVE CONDENSED SPECIES TO CORRECT SINGULARITY
  575          CONTINUE
               GOTO 500
             ELSE
-              WRITE (IOOUT,99008) ! warning
+              WRITE (errMsg,99008) ! warning
+              CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:LTEMP',errMsg)
+              ! WRITE (IOOUT,99008) ! warning
             ENDIF
           ENDIF
         ENDIF
@@ -1550,14 +1566,20 @@ C CALCULATE ENTROPY, CHECK ON DELTA S FOR SP PROBLEMS
       ELSE
         tem = Ssum(Npt) - S0
         IF ( DABS(tem).GT..0005 ) GOTO 500
-        IF ( Debug(Npt) ) WRITE (IOOUT,99018) tem ! variables
+        IF ( Debug(Npt) ) THEN
+          WRITE (errMsg,99018) tem ! variables
+          CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:MexUndef',errMsg)
+          ! WRITE (IOOUT,99018) tem ! variables
+        ENDIF
         Convg = .TRUE.
       ENDIF
 C CONVERGENCE TESTS ARE SATISFIED, TEST CONDENSED SPECIES.
  700  ncvg = ncvg + 1
       IF ( ncvg.GT.lncvg ) THEN
 C ERROR, SET TT=0
-        WRITE (IOOUT,99034) lncvg ! variables
+        WRITE (errMsg,99034) lncvg ! variables
+        CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:CONV',errMsg)
+        ! WRITE (IOOUT,99034) lncvg ! variables
         GOTO 1500
       ELSE
         IF ( .NOT.Shock ) THEN
@@ -1565,11 +1587,19 @@ C ERROR, SET TT=0
             xx(il) = X(il)
           ENDDO
           IF ( .NOT.Short ) THEN
-            IF ( newcom ) WRITE (IOOUT,99021) (cmp(k),k=1,le) ! variables
-            WRITE (IOOUT,99022) Npt,numb,Tt,(xx(il),il=1,le) ! variables
+            IF ( newcom ) THEN
+              WRITE (errMsg,99021) (cmp(k),k=1,le) ! variables
+              CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:mexUndef',errMsg)
+              ! WRITE (IOOUT,99021) (cmp(k),k=1,le) ! variables
+            ENDIF
+            WRITE (errMsg,99022) Npt,numb,Tt,(xx(il),il=1,le) ! variables
+            CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:mexUndef',errMsg)
+            ! WRITE (IOOUT,99022) Npt,numb,Tt,(xx(il),il=1,le) ! variables
           ENDIF
           IF ( .NOT.Tp.AND.Npr.EQ.0.AND.Tt.LE.Tg(1)*.2D0 ) THEN
-            WRITE (IOOUT,99008) ! warning
+            WRITE (errMsg,99008) ! warning
+            CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:LTEMP',errMsg)
+            ! WRITE (IOOUT,99008) ! warning
             GOTO 1500
           ENDIF
           newcom = .FALSE.
@@ -1635,8 +1665,13 @@ C ERROR, SET TT=0
           szgj = 0.
           DO inc = 1,Nc
             j = inc + Ng
-            IF ( Debug(Npt) ) WRITE (IOOUT,99024) Prod(j),Temp(1,inc), ! variables
-     &                               Temp(2,inc),En(j,Npt) 
+            IF ( Debug(Npt) ) THEN
+              WRITE (errMsg,99024) Prod(j),Temp(1,inc), ! variables
+     &                               Temp(2,inc),En(j,Npt)
+              CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:mexUndef',errMsg) 
+    !           WRITE (IOOUT,99024) Prod(j),Temp(1,inc), ! variables
+    !  &                               Temp(2,inc),En(j,Npt)
+            ENDIF
             IF ( En(j,Npt).LE.0. ) THEN
               IF ( Tt.GT.Temp(1,inc).OR.Temp(1,inc).EQ.Tg(1) ) THEN
                 IF ( Tt.LE.Temp(2,inc) ) THEN
@@ -1654,7 +1689,12 @@ C ERROR, SET TT=0
                     ENDIF
                     ipr = ipr - 1
                   ENDIF
-                  IF ( Debug(Npt) ) WRITE (IOOUT,99025) delg,sizeg ! variables
+                  IF ( Debug(Npt) ) THEN
+                    WRITE (errMsg,99025) delg,sizeg ! variables
+                    CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:mexUndef',
+     &                                      errMsg) 
+                    ! WRITE (IOOUT,99025) delg,sizeg ! variables
+                  ENDIF
                 ENDIF
               ENDIF
             ENDIF
@@ -1664,7 +1704,9 @@ C ERROR, SET TT=0
             j = jdelg
             GOTO 800
           ELSE
-            WRITE (IOOUT,99026) Prod(jcons) ! variables
+            WRITE (errMsg,99026) Prod(jcons) ! variables
+            CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:SING',errMsg)
+            ! WRITE (IOOUT,99026) Prod(jcons) ! variables
             GOTO 1500
           ENDIF
  720      kk = MAX(0,kg)
@@ -1682,8 +1724,11 @@ C WRONG PHASE INCLUDED FOR T INTERVAL, SWITCH EN
           Jcond(ipr) = jkg
           En(j,Npt) = 0.
           jsw = j
-          IF ( Prod(j).NE.Prod(jkg).AND..NOT.Short ) WRITE (IOOUT,99023) ! variables
-     &         Prod(j),Prod(jkg)
+          IF ( Prod(j).NE.Prod(jkg).AND..NOT.Short ) THEN
+            WRITE (errMsg,99023) Prod(j),Prod(jkg)! variables
+            CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:PHASE',errMsg)
+            ! WRITE (IOOUT,99023) Prod(j),Prod(jkg)! variables
+          ENDIF
           j = jkg
           GOTO 900
         ENDIF
@@ -1715,7 +1760,11 @@ C ADD CONDENSED SPECIES
         i = i - 1
       ENDDO
       Jcond(1) = j
-      IF ( .NOT.Short ) WRITE (IOOUT,99027) Prod(j) ! variables
+      IF ( .NOT.Short ) THEN
+        WRITE (errMsg,99027) Prod(j) ! variables
+        CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:mexUndef',errMsg)
+        ! WRITE (IOOUT,99027) Prod(j) ! variables
+      ENDIF
  900  inc = j - Ng
       Convg = .FALSE.
       IF ( Tp ) cpcalc = .FALSE.
@@ -1728,7 +1777,11 @@ C REMOVE CONDENSED SPECIES
       DO i = k,Npr
         Jcond(i) = Jcond(i+1)
       ENDDO
-      IF ( .NOT.Short ) WRITE (IOOUT,99028) Prod(j) ! variables
+      IF ( .NOT.Short ) THEN
+        WRITE (errMsg,99028) Prod(j) ! variables
+        CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:RM',errMsg)
+        ! WRITE (IOOUT,99028) Prod(j) ! variables
+      ENDIF
       Npr = Npr - 1
       DO i = 1,Nlm
         IF ( cmp(i).EQ.Prod(j) ) THEN
@@ -1829,8 +1882,12 @@ C CALCULATE NEW COEFFICIENTS
           ENDIF
         ENDDO
         IF ( Debug(Npt) ) THEN
-          WRITE (IOOUT,99029) ! header
-          WRITE (IOOUT,99030) (cmp(k),k=1,nn) ! variable
+          WRITE (errMsg,99029) ! header
+          CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:NEW',errMsg)
+          ! WRITE (IOOUT,99029) ! header
+          WRITE (errMsg,99030) (cmp(k),k=1,nn) ! variable
+          CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:MexUndef',errMsg)
+          ! WRITE (IOOUT,99030) (cmp(k),k=1,nn) ! variable
         ENDIF
       ENDIF
       IF ( Msing.NE.0 ) THEN
@@ -1883,7 +1940,11 @@ C SWITCH ORDER OF MSING AND NLM COMPONENTS
       Hsum(Npt) = Hsum(Npt)*Tt
       Wm(Npt) = 1./Enn
       gasfrc = Enn/Totn(Npt)
-      IF ( gasfrc.LT..0001 ) WRITE (IOOUT,99031) Npt,gasfrc ! variable
+      IF ( gasfrc.LT..0001 ) THEN
+        WRITE (errMsg,99031) Npt,gasfrc ! variable
+        CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:RESULTS',errMsg)
+        ! WRITE (IOOUT,99031) Npt,gasfrc ! variable
+      ENDIF
       IF ( Trace.NE.0. ) THEN
         DO 1450 j = 1,Ng
           IF ( lelim.NE.0 ) THEN
@@ -1894,17 +1955,27 @@ C SWITCH ORDER OF MSING AND NLM COMPONENTS
           IF ( Enln(j).GT.-87. ) En(j,Npt) = DEXP(Enln(j))
  1450   CONTINUE
       ENDIF
-      IF ( Debug(Npt) ) WRITE (IOOUT,99032) Npt,Pp,Tt,Hsum(Npt),! variable
+      IF ( Debug(Npt) ) 
+        WRITE (errMsg,99032) Npt,Pp,Tt,Hsum(Npt),! variable
      &                      Ssum(Npt),Wm(Npt),Cpr(Npt),Dlvpt(Npt),
      &                            Dlvtp(Npt),Gammas(Npt),Vlm(Npt)
+        CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:MexUndef',errMsg)     
+    !     WRITE (IOOUT,99032) Npt,Pp,Tt,Hsum(Npt),! variable
+    !  &                      Ssum(Npt),Wm(Npt),Cpr(Npt),Dlvpt(Npt),
+    !  &                            Dlvtp(Npt),Gammas(Npt),Vlm(Npt)   
+      ENDIF
       IF ( Tt.GE.Tg(1).AND.Tt.LE.Tg(4) ) GOTO 1600
       IF ( Shock ) GOTO 1600
-      WRITE (IOOUT,99033) Tt,Npt ! variable
+      WRITE (errMsg,99033) Tt,Npt ! variable
+      CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:TEMP',errMsg)
+      ! WRITE (IOOUT,99033) Tt,Npt ! variable
       IF ( Tt.GE.Tg(1)*.8D0.AND.Tt.LE.Tg(4)*1.1D0 ) GOTO 1600
       Npt = Npt + 1
  1500 Tt = 0.
       Npt = Npt - 1
-      WRITE (IOOUT,99035) Npt ! variables
+      WRITE (errMsg,99035) Npt ! variables
+      CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:CALC',errMsg)
+      ! WRITE (IOOUT,99035) Npt ! variables
  1600 Lsave = Nlm
       Nlm = ls
       IF ( Npr.GT.0 ) Gonly = .FALSE.
@@ -1971,6 +2042,7 @@ C***********************************************************************
 C CALCULATE PROPERTIES WITH FROZEN COMPOSITION AT ASSIGNED ENTROPY
 C AND PRESSURE.  CALLED FROM ROCKET.
 C***********************************************************************
+      USE mexVars
       IMPLICIT NONE
       INCLUDE 'cea.inc'
 C LOCAL VARIABLES
@@ -1979,7 +2051,7 @@ C LOCAL VARIABLES
       REAL*8 dlnt,dlpm
       SAVE dlnt,dlpm,i,inc,iter,j,k,nnn
 C
-      CALL mexWarnMsgTxt('Subroutine FROZEN called \n')
+      ! CALL mexWarnMsgTxt('Subroutine FROZEN called \n')
 
       Convg = .FALSE.
       Tln = DLOG(Tt)
@@ -2038,7 +2110,9 @@ C
           Tt = DEXP(Tln)
         ENDIF
       ENDDO
-      WRITE (IOOUT,99001) ! error 
+      WRITE (errMsg,99001) ! error 
+      CALL mexWarnMsgIdAndTxt('CEA:FROZEN:CONV',errMsg)
+      ! WRITE (IOOUT,99001) ! error 
  100  Tt = 0.
       Npt = Npt - 1
  200  RETURN
@@ -2049,6 +2123,7 @@ C***********************************************************************
 C SOLVE ANY LINEAR SET OF UP TO MAXMAT EQUATIONS
 C NUMBER OF EQUATIONS = IMAT
 C***********************************************************************
+      USE mexVars
       IMPLICIT NONE
       INCLUDE 'cea.inc'
 C LOCAL VARIABLES
@@ -3262,6 +3337,7 @@ C PROCESS NUMERICAL DATA FOLLOWING 'PROB' LITERALS
 C***********************************************************************
 C SET UP ITERATION OR DERIVATIVE MATRIX.
 C***********************************************************************
+      USE mexVars
       IMPLICIT NONE
       INCLUDE 'cea.inc'
 C LOCAL VARIABLES
@@ -4205,6 +4281,7 @@ C CALCULATE V+(KR), AND V-(KR)
 C***********************************************************************
 C SPECIAL OUTPUT FOR ROCKET PROBLEMS.
 C***********************************************************************
+      USE mexVars
       IMPLICIT NONE
       INCLUDE 'cea.inc'
 C LOCAL VARIABLES
@@ -5385,6 +5462,7 @@ C  ISV<0  SAVE COMPOSITIONS FROM POINT -ISV FOR POSSIBLE LATER USE.
 C         ALSO USE COMPOSITIONS FROM POINT -ISV FOR NPT.
 C  ISV=0  USE COMPOSITIONS SAVED WHEN ISV<0.
 C***********************************************************************
+      USE mexVars
       IMPLICIT NONE
       INCLUDE 'cea.inc'
 C LOCAL VARIABLES

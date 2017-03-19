@@ -77,30 +77,30 @@ function [ data ] = runWrapCEA( OF,pressure, supar, PcPe, fuel, fuelWt, fuelTemp
     IOinp = fopen(strcat(pathstr,'/wrapper.inp'),'w');
     
     % Write data in wrapper.inp
-    fprintf('prob case=wrapper ro equilibrium \n\n');
-    fprintf(' ! iac problem \n');
-    fprintf('o/f %g\n',OF);   %oxidiser to fuel ratio
-    fprintf('p,%s  %g\n',presUnt,pressure); %pressure
-    fprintf('supar %g\n',supar);  %supersonic area ratio
-    fprintf('pip %g\n',PcPe);    %Pc/Pe
-    fprintf('reac\n');
+    fprintf(IOinp,'prob case=wrapper ro equilibrium \n\n');
+    fprintf(IOinp,' ! iac problem \n');
+    fprintf(IOinp,'o/f %g\n',OF);   %oxidiser to fuel ratio
+    fprintf(IOinp,'p,%s  %g\n',presUnt,pressure); %pressure
+    fprintf(IOinp,'supar %g\n',supar);  %supersonic area ratio
+    fprintf(IOinp,'pip %g\n',PcPe);    %Pc/Pe
+    fprintf(IOinp,'reac\n');
     if length(fuelWt)>1
         for i = 1:length(fuelWt)
-            fprintf('  fuel  %s wt%%=%6.3f t,k=%6.2f\n',fuel{i},fuelWt(i),fuelTemp(i));
+            fprintf(IOinp,'  fuel  %s wt%%=%6.3f t,k=%6.2f\n',fuel{i},fuelWt(i),fuelTemp(i));
         end
     else
-        fprintf('  fuel  %s wt%%=%g. t,k=%6.2f\n',fuel,fuelWt,fuelTemp);
+        fprintf(IOinp,'  fuel  %s wt%%=%g. t,k=%6.2f\n',fuel,fuelWt,fuelTemp);
     end
     if length(oxidWt)>1
         for i = 1:length(oxidWt)
-            fprintf('  oxid  %s wt%%=%6.3f t,k=%6.2f\n',oxid{i},oxidWt(i),oxidTemp(i));
+            fprintf(IOinp,'  oxid  %s wt%%=%6.3f t,k=%6.2f\n',oxid{i},oxidWt(i),oxidTemp(i));
         end
     else
-        fprintf('  oxid  %s wt%%=%g. t,k=%6.2f\n',oxid,oxidWt,oxidTemp);
+        fprintf(IOinp,'  oxid  %s wt%%=%g. t,k=%6.2f\n',oxid,oxidWt,oxidTemp);
     end
-    fprintf('output    short\n');
-    fprintf('output trace=1e-5\n');
-    fprintf('end\n');
+    fprintf(IOinp,'output    short\n');
+    fprintf(IOinp,'output trace=1e-5\n');
+    fprintf(IOinp,'end\n');
     
     % Close wrapper.inp
     fclose(IOinp);

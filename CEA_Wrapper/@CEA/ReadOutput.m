@@ -1,4 +1,4 @@
-function [ data ] = ReadOutput( fileStr )
+function [ data ] = ReadOutput(obj, fileStr )
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -53,6 +53,6 @@ function [ data ] = ReadOutput( fileStr )
     end
 
     fclose(IOout);
-    
+    obj.data = data;
 end
 
