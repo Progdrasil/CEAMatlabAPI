@@ -31,7 +31,7 @@ function data = run(obj)
     data = cea2(obj.ioinp,inputFile,thermoPath);
     if obj.Debug
         c2 = clock - c2;
-        fprintf('time to run CEA = %16.15e sec \n',c2(end))
+        fprintf('\t\ttime to run CEA \t= %16.15e sec \n',c2(end))
     end
     obj.data = data;
     return;

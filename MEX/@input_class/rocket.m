@@ -47,7 +47,7 @@ function inp = rocket(obj)%, OF, pressure, presUnit, supar, PcPe, fuel, fuelWt, 
     inp{i,1} = sprintf('end');
     if obj.parent.Debug
         c1 = clock - c1;
-        fprintf('time to write input file = %16.15e sec \n',c1(end))
+        fprintf('time to write input string \t= %16.15e sec \n',c1(end))
     end
 
     obj.parent.ioinp = inp;

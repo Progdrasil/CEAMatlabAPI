@@ -119,7 +119,8 @@ C-----------------------------------------------------------------------
 C     variables added for Matab Mex integration
       mwPointer outputData
       CHARACTER*500 errMsg
-      COMMON outputData,errMsg
+      CHARACTER*15 title(13)
+      COMMON outputData,errMsg,title
       END MODULE
 C     Gateway routine
       SUBROUTINE MexFunction(nlhs, plhs, nrhs, prhs)
@@ -357,7 +358,7 @@ C LOCAL VARIABLES
         GOTO 400  !stop the program
       ENDIF
       ! OPEN (IOINP,FILE=infile,STATUS='old',FORM='formatted')! open input file given by user
-      OPEN (IOOUT,FILE=ofile,STATUS='unknown',FORM='formatted') !create and open output file
+      ! OPEN (IOOUT,FILE=ofile,STATUS='unknown',FORM='formatted') !create and open output file
       OPEN (IOSCH,STATUS='scratch',FORM='unformatted')! FIND OUT
       OPEN (IOTHM,FILE=thermoFile,FORM='unformatted')!open termodynamics library 
       OPEN (IOTRN,FILE=transFile,FORM='unformatted')!Open trans library (WHAT IS TRANS LIBRARY?)
@@ -460,8 +461,8 @@ C INITIAL ESTIMATES
  200  IF ( readok ) GOTO 100
 !  300  CLOSE (IOINP)
       ! CLOSE (IOOUT)
- 300  CLOSE (IOOUT)
-      CLOSE (IOSCH)
+!  300  CLOSE (IOOUT)
+ 300  CLOSE (IOSCH)
       CLOSE (IOTHM)
       CLOSE (IOTRN)
       CLOSE (IOPLT)
@@ -1409,10 +1410,11 @@ C CHECK ON ELECTRON BALANCE
                     IF ( A(ls,j).NE.0. ) Enln(j) = Enln(j) + A(ls,j)
      &                   *dpie
                   ENDDO
-                  IF ( Debug(Npt) ) 
+                  IF ( Debug(Npt) ) THEN
                     WRITE (errMsg,99016) iter,dpie !variables
                     CALL mexWarnMsgIdAndTxt('CEA:EQLBRM:DEBUG',errMsg)
                     ! WRITE (IOOUT,99016) iter,dpie !variables
+                  ENDIF
                   IF ( DABS(dpie).GT..0001 ) THEN
                     X(le) = X(le) + dpie
                     iter = iter + 1
@@ -1955,7 +1957,7 @@ C SWITCH ORDER OF MSING AND NLM COMPONENTS
           IF ( Enln(j).GT.-87. ) En(j,Npt) = DEXP(Enln(j))
  1450   CONTINUE
       ENDIF
-      IF ( Debug(Npt) ) 
+      IF ( Debug(Npt) ) THEN
         WRITE (errMsg,99032) Npt,Pp,Tt,Hsum(Npt),! variable
      &                      Ssum(Npt),Wm(Npt),Cpr(Npt),Dlvpt(Npt),
      &                            Dlvtp(Npt),Gammas(Npt),Vlm(Npt)
@@ -3580,10 +3582,11 @@ C ENTRY OUT4 WRITES TRANSPORT PROPERTIES.
 C
 C NOTE - ROCKET, SHOCK, AND DETON PROBLEMS HAVE ADDITIONAL OUTPUT.
 C***********************************************************************
+      USE mexVars
       IMPLICIT NONE
       INCLUDE 'cea.inc'
 C LOCAL VARIABLES
-      CHARACTER*15 fc,fgi,fh,fp,frh,fs,fu
+      CHARACTER*15 fc(2),fgi(2),fh(2),fp(2),frh(2),fs(2),fu(2)
       CHARACTER*4 mamo
       INTEGER i,im,ione,j,k,kin,m,mcond,mcondf,mcp,mdvp,mdvt,meq,mfa,
      &        mg,mgam,mh,mie,mm,mmw,mof,mp,mpf,mph,mpn,mpnf,mrho,ms,
@@ -3620,22 +3623,22 @@ C
       EQUIVALENCE (mxx(22),mdvp)
       EQUIVALENCE (mxx(23),mcondf)
       EQUIVALENCE (mxx(24),mpnf)
-      WRITE (IOOUT,99001) Case !variable
+      ! WRITE (IOOUT,99001) Case !variable
 
       ! CALL mexWarnMsgTxt('Subroutine OUT1 called \n')
 
-      IF ( Moles ) THEN
-        WRITE (IOOUT,99002) '   MOLES   ' !header
-        IF ( .NOT.Siunit ) WRITE (IOOUT,99003) ! header
-        IF ( Siunit ) WRITE (IOOUT,99004) !header
-      ELSE
-        WRITE (IOOUT,99002) 'WT FRACTION' ! header
-        IF ( .NOT.Siunit ) WRITE (IOOUT,99005) ! header
-        IF ( Siunit ) WRITE (IOOUT,99006) ! header 
-      ENDIF
-      DO n = 1,Nreac
-        WRITE (IOOUT,99007) Fox(n),Rname(n),Pecwt(n),Enth(n)*R,Rtemp(n) ! variables
-      ENDDO
+      ! IF ( Moles ) THEN
+      !   WRITE (IOOUT,99002) '   MOLES   ' !header
+      !   IF ( .NOT.Siunit ) WRITE (IOOUT,99003) ! header
+      !   IF ( Siunit ) WRITE (IOOUT,99004) !header
+      ! ELSE
+      !   WRITE (IOOUT,99002) 'WT FRACTION' ! header
+      !   IF ( .NOT.Siunit ) WRITE (IOOUT,99005) ! header
+      !   IF ( Siunit ) WRITE (IOOUT,99006) ! header 
+      ! ENDIF
+      ! DO n = 1,Nreac
+      !   WRITE (IOOUT,99007) Fox(n),Rname(n),Pecwt(n),Enth(n)*R,Rtemp(n) ! variables
+      ! ENDDO
       phi = 0.
       tem = (Vpls(1)+Vmin(1))*Oxfl
       IF ( ABS(tem).GE.1.D-3 ) phi = -(Vmin(2)+Vpls(2))/tem
@@ -3652,12 +3655,16 @@ C
         ENDIF
         IF ( Siunit ) THEN
           rho = rho*1000.D0
-          WRITE (IOOUT,99021) rho ! variable
+          WRITE (errMsg,99021) rho ! variable
+          CALL mexWarnMsgIdAndTxt('CEA:OUT1:RHO',errMsg)
+          ! WRITE (IOOUT,99021) rho ! variable
         ELSE
-          WRITE (IOOUT,99022) rho ! variable
+          WRITE (errMsg,99022) rho ! variable
+          CALL mexWarnMsgIdAndTxt('CEA:OUT1:RHO',errMsg)
+          ! WRITE (IOOUT,99022) rho ! variable
         ENDIF
       ENDIF
-      WRITE (IOOUT,99008) Oxfl,pfuel,Eqrat,phi ! variable
+      ! WRITE (IOOUT,99008) Oxfl,pfuel,Eqrat,phi ! variable
       RETURN
 C***********************************************************************
       ENTRY OUT2
@@ -3740,24 +3747,38 @@ C SET MXX ARRAY FOR PLOTTING PARAMETERS
       ENDDO
       IF ( Siunit ) THEN
         pfactor = 1.D0
-        fp = 'P, BAR'
+        fp(1) = 'P'
+        fp(2) = 'BAR'
         vnum = 1.D05
-        frh = 'RHO, KG/CU M'
-        fh = 'H, KJ/KG'
-        fu = 'U, KJ/KG'
-        fgi = 'G, KJ/KG'
-        fs = 'S, KJ/(KG)(K)'
-        fc = 'Cp, KJ/(KG)(K)'
+        frh(1) = 'RHO'
+        frh(2) = 'KG/CU M'
+        fh(1) = 'H'
+        fh(2) = 'KJ/KG'
+        fu(1) = 'U'
+        fu(2) = 'KJ/KG'
+        fgi(1) = 'G'
+        fgi(2) = 'KJ/KG'
+        fs(1) = 'S'
+        fs(2) = 'KJ/(KG)(K)'
+        fc(1) = 'Cp'
+        fc(2) = 'KJ/(KG)(K)'
       ELSE
         pfactor = 1.D0/1.01325D0
-        fp = 'P, ATM'
+        fp(1) = 'P'
+        fp(2) = 'ATM'
         vnum = 100.D0
-        frh = 'RHO, G/CC'
-        fh = 'H, CAL/G'
-        fu = 'U, CAL/G'
-        fgi = 'G, CAL/G'
-        fs = 'S, CAL/(G)(K)'
-        fc = 'Cp, CAL/(G)(K)'
+        frh(1) = 'RHO'
+        frh(2) = 'G/CC'
+        fh(1) = 'H'
+        fh(2) = 'CAL/G'
+        fu(1) = 'U'
+        fu(1) = 'CAL/G'
+        fgi(1) = 'G'
+        fgi(2) = 'CAL/G'
+        fs(1) = 'S'
+        fs(2) = 'CAL/(G)(K)'
+        fc(1) = 'Cp'
+        fc(2) = 'CAL/(G)(K)'
       ENDIF
       Fmt(4) = Fmt(6)
 C PRESSURE
@@ -3769,19 +3790,22 @@ C PRESSURE
           IF ( mt.GT.0 ) Pltout(i+Iplt-ione,mt) = Ttt(i)
         ENDIF
       ENDDO
-      WRITE (IOOUT,Fmt) fp,(X(j),j=1,Npt) ! variable
+      CALL ADDTOSTRUCT(title,fp(1),Npt,X(1:Npt),fp(2),.TRUE.)
+      ! WRITE (IOOUT,Fmt) fp,(X(j),j=1,Npt) ! variable
 C TEMPERATURE
       Fmt(4) = '13'
       Fmt(5) = ' '
       Fmt(7) = '2,'
-      WRITE (IOOUT,Fmt) 'T, K            ',(Ttt(j),j=1,Npt) !variable
+      CALL ADDTOSTRUCT(title,'T',Npt,Ttt(1:Npt),'K',.TRUE.)
+      ! WRITE (IOOUT,Fmt) 'T, K            ',(Ttt(j),j=1,Npt) !variable
 C DENSITY
       DO i = 1,Npt
         IF ( Vlm(i).NE.0. ) X(i) = vnum/Vlm(i)
         IF ( Nplt.NE.0.AND.i.GT.ione.AND.mrho.GT.0 )
      &       Pltout(i+Iplt-ione,mrho) = X(i)
       ENDDO
-      CALL EFMT(Fmt(4),frh,X)
+      CALL ADDTOSTRUCT(title,frh(1),Npt,X(1:Npt),frh(2),.TRUE.)
+      ! CALL EFMT(Fmt(4),frh(1),X)
 C ENTHALPY
       DO i = 1,Npt
         X(i) = Hsum(i)*R
@@ -3790,7 +3814,8 @@ C ENTHALPY
       ENDDO
       Fmt(4) = Fmt(6)
       CALL VARFMT(X)
-      WRITE (IOOUT,Fmt) fh,(X(j),j=1,Npt) ! variable
+      CALL ADDTOSTRUCT(title,fh(1),Npt,X(1:Npt),fh(2),.TRUE.)
+      ! WRITE (IOOUT,Fmt) fh(1),(X(j),j=1,Npt) ! variable
 C INTERNAL ENERGY
       DO i = 1,Npt
         X(i) = (Hsum(i)-Ppp(i)*Vlm(i)/Rr)*R
@@ -3798,7 +3823,8 @@ C INTERNAL ENERGY
      &       Pltout(i+Iplt-ione,mie) = X(i)
       ENDDO
       CALL VARFMT(X)
-      WRITE (IOOUT,Fmt) fu,(X(j),j=1,Npt) ! variable
+      CALL ADDTOSTRUCT(title,fu(1),Npt,X(1:Npt),fu(2),.TRUE.)
+      ! WRITE (IOOUT,Fmt) fu(1),(X(j),j=1,Npt) ! variable
 C GIBBS ENERGY
       DO i = 1,Npt
         X(i) = (Hsum(i)-Ttt(i)*Ssum(i))*R
@@ -3814,29 +3840,40 @@ C GIBBS ENERGY
         ENDIF
       ENDDO
       CALL VARFMT(X)
-      WRITE (IOOUT,Fmt) fgi,(X(j),j=1,Npt) ! variable
+      CALL ADDTOSTRUCT(title,fgi(1),Npt,X(1:Npt),fgi(2),.TRUE.)
+      ! WRITE (IOOUT,Fmt) fgi(1),(X(j),j=1,Npt) ! variable
 C ENTROPY
       Fmt(4) = '13'
       Fmt(5) = ' '
       Fmt(7) = '4,'
-      WRITE (IOOUT,Fmt) fs,(Ssum(j)*R,j=1,Npt) ! variable
-      WRITE (IOOUT,99009)! header empty line
+      CALL ADDTOSTRUCT(title,fs(1),Npt,Ssum(1:Npt)*R,fs(2),.TRUE.)
+      ! WRITE (IOOUT,Fmt) fs(1),(Ssum(j)*R,j=1,Npt) ! variable
+      ! WRITE (IOOUT,99009)! header empty line
 C MOLECULAR WEIGHT
       Fmt(7) = '3,'
-      WRITE (IOOUT,Fmt) 'M, (1/n)        ',(Wm(j),j=1,Npt) ! variable
-      IF ( .NOT.Gonly ) WRITE (IOOUT,Fmt) 'MW, MOL WT      ',!variable
-     &                                (1.D0/Totn(j),j=1,Npt)
+      CALL ADDTOSTRUCT(title,'M',Npt,Wm(1:Npt),'(1/n)',.TRUE.)
+      ! WRITE (IOOUT,Fmt) 'M, (1/n)        ',(Wm(j),j=1,Npt) ! variable
+      IF ( .NOT.Gonly ) CALL ADDTOSTRUCT(title,'MW',Npt,
+     &                  1.D0/Totn(1:Npt),'MOL WT',.TRUE.)
+      !WRITE (IOOUT,Fmt) 'MW, MOL WT      ',!variable
+    !  &                                (1.D0/Totn(j),j=1,Npt)
 C (DLV/DLP)T
       Fmt(7) = '5,'
-      IF ( Eql ) WRITE (IOOUT,Fmt) '(dLV/dLP)t      ',(Dlvpt(j),j=1,Npt) !variable
+      IF ( Eql ) CALL ADDTOSTRUCT(title,'dLVdLPt',Npt,Dlvpt(1:Npt),
+     &                '',.FALSE.)
+      !WRITE (IOOUT,Fmt) '(dLV/dLP)t      ',(Dlvpt(j),j=1,Npt) !variable
 C (DLV/DLT)P
       Fmt(7) = '4,'
-      IF ( Eql ) WRITE (IOOUT,Fmt) '(dLV/dLT)p      ',(Dlvtp(j),j=1,Npt) ! variable
+      IF ( Eql ) CALL ADDTOSTRUCT(title,'dLVdLTp',Npt,Dlvtp(1:Npt),
+     &                '',.FALSE.)
+      !WRITE (IOOUT,Fmt) '(dLV/dLT)p      ',(Dlvtp(j),j=1,Npt) ! variable
 C HEAT CAPACITY
-      WRITE (IOOUT,Fmt) fc,(Cpr(j)*R,j=1,Npt) ! variable
+      CALL ADDTOSTRUCT(title,fc(1),Npt,Cpr(1:Npt)*R,fc(2),.TRUE.)
+      ! WRITE (IOOUT,Fmt) fc(1),(Cpr(j)*R,j=1,Npt) ! variable
 C GAMMA(S)
       Fmt(7) = '4,'
-      WRITE (IOOUT,Fmt) 'GAMMAs          ',(Gammas(j),j=1,Npt)! variable
+      CALL ADDTOSTRUCT(title,'GAMMAs',Npt,Gammas(1:Npt),'',.FALSE.)
+      ! WRITE (IOOUT,Fmt) 'GAMMAs          ',(Gammas(j),j=1,Npt)! variable
 C SONIC VELOCITY
       Fmt(7) = '1,'
       DO i = 1,Npt
@@ -3844,7 +3881,8 @@ C SONIC VELOCITY
         IF ( Nplt.NE.0.AND.i.GT.ione.AND.mson.GT.0 )
      &       Pltout(i+Iplt-ione,mson) = Sonvel(i)
       ENDDO
-      WRITE (IOOUT,Fmt) 'SON VEL,M/SEC   ',(Sonvel(j),j=1,Npt) ! variable
+      CALL ADDTOSTRUCT(title,'SONVEL',Npt,Gammas(1:Npt),'M/SEC',.TRUE.)
+      ! WRITE (IOOUT,Fmt) 'SON VEL,M/SEC   ',(Sonvel(j),j=1,Npt) ! variable
       RETURN
 C***********************************************************************
       ENTRY OUT3
@@ -3852,12 +3890,12 @@ C***********************************************************************
       IF ( Trace.NE.0. ) tra = Trace
 C MASS OR MOLE FRACTIONS 
       IF ( Massf ) THEN
-        mamo = 'MASS'
+        mamo = 'MASS FRACTIONS'
       ELSE
-        mamo = 'MOLE'
+        mamo = 'MOLE FRACTIONS'
       ENDIF
       IF ( Eql ) THEN
-        WRITE (IOOUT,99010) mamo ! header
+        ! WRITE (IOOUT,99010) mamo ! header
         notuse = 0
         DO k = 1,Ngc
           kok = .TRUE.
@@ -3893,9 +3931,11 @@ C MASS OR MOLE FRACTIONS
           ENDDO
           IF ( kin.EQ.1 ) THEN
             IF ( Trace.EQ.0. ) THEN
-              WRITE (IOOUT,99011) Prod(k),(X(i),i=1,Npt) ! variable
+              CALL ADDTOSTRUCT(title,Prod(k),Npt,X(1:Npt),mamo,.TRUE.)
+              ! WRITE (IOOUT,99011) Prod(k),(X(i),i=1,Npt) ! variable
             ELSE
-              CALL EFMT(Fmt(4),Prod(k),X)
+              CALL ADDTOSTRUCT(title,Prod(k),Npt,X(1:Npt),mamo,.TRUE.)
+              ! CALL EFMT(Fmt(4),Prod(k),X)
             ENDIF
             IF ( Prod(k).EQ.Omit(notuse) ) notuse = notuse - 1
           ELSEIF ( Prod(k).NE.Prod(k-1) ) THEN
@@ -3904,21 +3944,31 @@ C MASS OR MOLE FRACTIONS
           ENDIF
         ENDDO
       ENDIF
-      WRITE (IOOUT,99012) Tg(4) ! variable
+      ! WRITE (IOOUT,99012) Tg(4) ! variable
       IF ( .NOT.Short ) THEN
-        WRITE (IOOUT,99013) mamo,tra !header
-        WRITE (IOOUT,99014) (Omit(i),i=1,notuse) !variables
+        WRITE (errMsg,99013) mamo,tra !header
+        CALL mexWarnMsgIdAndTxt('CEA:OUT3:PROD',errMsg)
+        ! WRITE (IOOUT,99013) mamo,tra !header
+        WRITE (errMsg,99014) (Omit(i),i=1,notuse) !header
+        CALL mexWarnMsgIdAndTxt('CEA:OUT3:PROD',errMsg)
+        ! WRITE (IOOUT,99014) (Omit(i),i=1,notuse) !variables
       ENDIF
-      IF ( .NOT.Moles ) WRITE (IOOUT,99015)! warning
+      IF ( .NOT.Moles ) THEN
+        WRITE (errMsg,99015) !header
+        CALL mexWarnMsgIdAndTxt('CEA:OUT3:PROD',errMsg)
+        ! WRITE (IOOUT,99015)! warning
+      ENDIF
       GOTO 200
 C***********************************************************************
       ENTRY OUT4
-      WRITE (IOOUT,99009) !header empty line
-      WRITE (IOOUT,99016) !header
+      ! WRITE (IOOUT,99009) !header empty line
+      ! WRITE (IOOUT,99016) !header
       IF ( Siunit ) THEN
-        WRITE (IOOUT,99018) ! header
+        ! WRITE (IOOUT,99018) ! header
+        mamo = 'MILLIWATTS/(CM)(K)'
       ELSE
-        WRITE (IOOUT,99017) ! header
+        ! WRITE (IOOUT,99017) ! header
+        mamo = 'MILLICALORIES/(CM)(K)(SEC)'
       ENDIF
 C TRANSPORT PROPERTIES
       Fmt(4) = Fmt(6)
@@ -3941,7 +3991,7 @@ C TRANSPORT PROPERTIES
       IF ( Eql ) THEN
         WRITE (IOOUT,99019) !header
 C SPECIFIC HEAT
-        WRITE (IOOUT,Fmt) fc,(Cpeql(j),j=1,Npt)! variables
+        WRITE (IOOUT,Fmt) fc(1),(Cpeql(j),j=1,Npt)! variables
 C CONDUCTIVITY
         WRITE (IOOUT,Fmt) 'CONDUCTIVITY    ',(Coneql(j),j=1,Npt)! variable
 C PRANDTL NUMBER
@@ -3949,7 +3999,7 @@ C PRANDTL NUMBER
       ENDIF
       WRITE (IOOUT,99020) ! header
 C SPECIFIC HEAT
-      WRITE (IOOUT,Fmt) fc,(Cpfro(j),j=1,Npt) !variable
+      WRITE (IOOUT,Fmt) fc(1),(Cpfro(j),j=1,Npt) !variable
 C CONDUCTIVITY
       WRITE (IOOUT,Fmt) 'CONDUCTIVITY    ',(Confro(j),j=1,Npt) ! variable
 C PRANDTL NUMBER
@@ -3968,11 +4018,11 @@ C PRANDTL NUMBER
 99010 FORMAT (/1x,A4,' FRACTIONS'/)
 99011 FORMAT (1x,A15,F9.5,12F9.5)
 99012 FORMAT (/'  * THERMODYNAMIC PROPERTIES FITTED TO',F7.0,'K')
-99013 FORMAT (/'    PRODUCTS WHICH WERE CONSIDERED BUT WHOSE ',A4,
-     &        ' FRACTIONS',/'    WERE LESS THAN',1PE13.6,
-     &        ' FOR ALL ASSIGNED CONDITIONS'/)
+99013 FORMAT ('    PRODUCTS WHICH WERE CONSIDERED BUT WHOSE ',A4,
+     &        ' FRACTIONS\n   WERE LESS THAN',1PE13.6,
+     &        ' FOR ALL ASSIGNED CONDITIONS')
 99014 FORMAT (5(1x,A15))
-99015 FORMAT (/' NOTE. WEIGHT FRACTION OF FUEL IN TOTAL FUELS AND OF',
+99015 FORMAT (' NOTE. WEIGHT FRACTION OF FUEL IN TOTAL FUELS AND OF',
      &        ' OXIDANT IN TOTAL OXIDANTS')
 99016 FORMAT (' TRANSPORT PROPERTIES (GASES ONLY)')
 99017 FORMAT ('   CONDUCTIVITY IN UNITS OF MILLICALORIES/(CM)(K)(SEC)'/)
@@ -4286,14 +4336,19 @@ C***********************************************************************
       INCLUDE 'cea.inc'
 C LOCAL VARIABLES
       CHARACTER*4 exit(11)
-      CHARACTER*15 fi,fiv,fr,z(4)
+      ! CHARACTER*15 title(13)
+      CHARACTER*15 fi(2),fiv(2),fr(2),z(4)
       INTEGER i,i23,i46,i57,i68,i79,ione,ixfr,ixfz,j,k,line,ln,mae,mcf,
      &        misp,mivac,mmach,mppf,mppj,mxx(8),nex
-      INTEGER INDEX
-      REAL*8 agv,aw,gc,tem,tra,vaci(NCOL),ww
+      INTEGER INDEX,newField
+      REAL*8 agv,aw,gc,tem,tra,vaci(NCOL),ww,cStrArr(MAXMAT)
+      mwPointer tempStruct
+      mwPointer mxCreateStructArray
+      INTEGER*4 mxAddField
       SAVE agv,aw,fi,fiv,fr,gc,i,i23,i46,i57,i68,i79,ione,ixfr,ixfz,j,k,
      &  line,ln,mae,mcf,misp,mivac,mmach,mppf,mppj,mxx,nex,tem,tra,vaci,
      &  ww,z
+
 C
       EQUIVALENCE (mxx(1),mppf)
       EQUIVALENCE (mxx(2),mppj)
@@ -4306,21 +4361,29 @@ C
 
       ! CALL mexWarnMsgTxt('Subroutine RKTOUT called \n')
 
-      IF ( .NOT.Eql ) THEN
-        WRITE (IOOUT,99004) ! header
-        IF ( Nfz.GT.1 ) WRITE (IOOUT,99005) Nfz ! header
-      ELSE
-        WRITE (IOOUT,99001) ! header
-        IF ( Iopt.NE.0 ) WRITE (IOOUT,99002) ! header
-        IF ( Iopt.EQ.0 ) WRITE (IOOUT,99003) ! header
-      ENDIF
-      IF ( Ttt(1).EQ.T(It) ) WRITE (IOOUT,99006) ! header
-      tem = Ppp(1)*14.696006D0/1.01325D0
-      WRITE (IOOUT,99009) 'Pin',tem ! variable
+      ! IF ( .NOT.Eql ) THEN
+      !   WRITE (IOOUT,99004) ! header
+      !   IF ( Nfz.GT.1 ) WRITE (IOOUT,99005) Nfz ! header
+      ! ELSE
+      !   WRITE (IOOUT,99001) ! header
+      !   IF ( Iopt.NE.0 ) WRITE (IOOUT,99002) ! header
+      !   IF ( Iopt.EQ.0 ) WRITE (IOOUT,99003) ! header
+      ! ENDIF
+      ! IF ( Ttt(1).EQ.T(It) ) WRITE (IOOUT,99006) ! header
+      ! tem = Ppp(1)*14.696006D0/1.01325D0
+      ! WRITE (IOOUT,99009) 'Pin',tem ! variable
       i23 = 2
       IF ( Iopt.GT.0 ) THEN
-        IF ( Iopt.EQ.1 ) WRITE (IOOUT,99007) Subar(1),App(2) !variable
-        IF ( Iopt.EQ.2 ) WRITE (IOOUT,99008) Ma,App(2) ! variable
+        IF ( Iopt.EQ.1 ) THEN
+          WRITE (errMsg,99007) Subar(1),App(2) !variable
+          CALL mexWarnMsgIdAndTxt('CEA:RKTOUT:SUBAR',errMsg)
+          ! WRITE (IOOUT,99007) Subar(1),App(2) !variable
+        ENDIF
+        IF ( Iopt.EQ.2 ) THEN
+          WRITE (errMsg,99008) Ma,App(2) ! variable
+          CALL mexWarnMsgIdAndTxt('CEA:RKTOUT:MA',errMsg)
+          ! WRITE (IOOUT,99008) Ma,App(2) ! variable
+        ENDIF
         i23 = 3
       ENDIF
       CALL OUT1
@@ -4337,18 +4400,33 @@ C
       ENDIF
 C PRESSURE RATIOS
       IF ( Iopt.EQ.0 ) THEN
-        WRITE (IOOUT,99011) (exit(i),i=1,nex) !header
+        title(1) = 'CHAMBER'
+        title(2) = 'THROAT'
+        DO i = 3,nex+2
+          IF(i-2.LT.10) WRITE(title(i),99017) exit(i),i-2
+          IF(i-2.GE.10) WRITE(title(i),99018) exit(i),i-2
+        ENDDO
+        ! WRITE (IOOUT,99011) (exit(i),i=1,nex) !header
         CALL VARFMT(App)
-        WRITE (IOOUT,Fmt) 'Pinf/P         ',(App(j),j=1,Npt) !variable
+        CALL ADDTOSTRUCT(title,'PinfP',Npt,App,'',.FALSE.)
+        ! WRITE (IOOUT,Fmt) 'Pinf/P         ',(App(j),j=1,Npt) !variable
       ELSE
         nex = nex - 1
-        WRITE (IOOUT,99010) (exit(i),i=1,nex) ! header
+        title(1) = 'INJECTOR'
+        title(2) = 'CombEnd'
+        title(3) = 'THROAT'
+        DO i = 4,nex+3
+          IF(i-2.LT.10) WRITE(title(i),99017) exit(i),i-2
+          IF(i-2.GE.10) WRITE(title(i),99018) exit(i),i-2
+        ENDDO
+        ! WRITE (IOOUT,99010) (exit(i),i=1,nex) ! header
         X(1) = 1.D0
         DO i = 2,Npt
           X(i) = Ppp(1)/Ppp(i)
         ENDDO
         CALL VARFMT(X)
-        WRITE (IOOUT,Fmt) 'Pinj/P         ',(X(i),i=1,Npt) ! variable
+        CALL ADDTOSTRUCT(title,'PinjP',Npt,X(1:Npt),'',.FALSE.)
+        ! WRITE (IOOUT,Fmt) 'Pinj/P         ',(X(i),i=1,Npt) ! variable
       ENDIF
       CALL OUT2
       DO i = 1,8
@@ -4380,15 +4458,21 @@ C PRESSURE RATIOS
       IF ( Siunit ) THEN
         agv = 1.
         gc = 1.
-        fr = 'CSTAR, M/SEC'
-        fiv = 'Ivac, M/SEC'
-        fi = 'Isp, M/SEC'
+        fr(1) = 'CSTAR'
+        fr(2) = 'M/SEC'
+        fiv(1) = 'Ivac'
+        fiv(2) = 'M/SEC'
+        fi(1) = 'Isp'
+        fi(2) = 'M/SEC'
       ELSE
         gc = 32.174
         agv = 9.80665
-        fr = 'CSTAR, FT/SEC'
-        fiv = 'Ivac,LB-SEC/LB'
-        fi = 'Isp, LB-SEC/LB'
+        fr(1) = 'CSTAR'
+        fr(2) = 'FT/SEC'
+        fiv(1) = 'Ivac'
+        fiv(2) = 'LB-SEC/LB'
+        fi(1) = 'Isp'
+        fi(2) = 'LB-SEC/LB'
       ENDIF
       DO k = 2,Npt
         Spim(k) = (2.*Rr*(Hsum(1)-Hsum(k)))**.5/agv
@@ -4406,33 +4490,45 @@ C MACH NUMBER
       Vmoc(1) = 0.
       IF ( Gammas(i23).EQ.0. ) Vmoc(i23) = 0.
       Fmt(7) = '3,'
-      WRITE (IOOUT,Fmt) 'MACH NUMBER    ',(Vmoc(j),j=1,Npt) ! variable
+      CALL ADDTOSTRUCT(title,'MachNumber',Npt,Vmoc(1:Npt),'',.FALSE.)
+      ! WRITE (IOOUT,Fmt) 'MachNumber',(Vmoc(j),j=1,Npt) ! variable
       IF ( Trnspt ) CALL OUT4
-      WRITE (IOOUT,99013) ! header
+      ! WRITE (IOOUT,99013) ! header
 C AREA RATIO
       Fmt(4) = '9x,'
       Fmt(i46) = '9x,'
       CALL VARFMT(Aeat)
       Fmt(5) = ' '
       Fmt(i57) = ' '
-      WRITE (IOOUT,Fmt) 'Ae/At          ',(Aeat(j),j=2,Npt) ! variable
+      CALL ADDTOSTRUCT(title(2:Npt),'AeAt',Npt-1,Aeat(2:Npt),'',.FALSE.)
+      ! WRITE (IOOUT,Fmt) 'Ae/At          ',(Aeat(j),j=2,Npt) ! variable
 C C*
       Fmt(i57) = '13'
       Fmt(i68) = Fmt(i68+2)
       Fmt(i79) = '1,'
-      WRITE (IOOUT,Fmt) fr,(Cstr,j=2,Npt) ! variable
+      DO i = 1,Npt
+        cStrArr(i) = Cstr
+      ENDDO
+      CALL ADDTOSTRUCT(title(2:Npt),fr(1),Npt-1,cStrArr(2:Npt),
+     &                 fr(2),.TRUE.)
+      ! WRITE (IOOUT,Fmt) fr(1),(Cstr,j=2,Npt) ! variable
 C CF - THRUST COEFICIENT
       Fmt(i79) = '4,'
       DO i = 2,Npt
         X(i) = gc*Spim(i)/Cstr
       ENDDO
-      WRITE (IOOUT,Fmt) 'CF             ',(X(j),j=2,Npt) ! variable
+      CALL ADDTOSTRUCT(title(2:Npt),'CF',Npt-1,X(2:Npt),'',.FALSE.)
+      ! WRITE (IOOUT,Fmt) 'CF             ',(X(j),j=2,Npt) ! variable
 C VACUUM IMPULSE
       Fmt(i57) = '13'
       Fmt(i79) = '1,'
-      WRITE (IOOUT,Fmt) fiv,(vaci(j),j=2,Npt) ! variable
+      CALL ADDTOSTRUCT(title(2:Npt),fiv(1),Npt-1,vaci(2:Npt),
+     &                  fiv(2),.TRUE.)
+      ! WRITE (IOOUT,Fmt) fiv(1),(vaci(j),j=2,Npt) ! variable
 C SPECIFIC IMPULSE
-      WRITE (IOOUT,Fmt) fi,(Spim(j),j=2,Npt) ! variable
+      CALL ADDTOSTRUCT(title(2:Npt),fi(1),Npt-1,Spim(2:Npt),
+     &                  fi(2),.true.)
+      ! WRITE (IOOUT,Fmt) fi(1),(Spim(j),j=2,Npt) ! variable
       IF ( Nplt.GT.0 ) THEN
         Spim(1) = 0
         Aeat(1) = 0
@@ -4450,7 +4546,7 @@ C SPECIFIC IMPULSE
           IF ( misp.GT.0 ) Pltout(i+Iplt-ione,misp) = Spim(i)
         ENDDO
       ENDIF
-      WRITE (IOOUT,99012) ! empty line
+      ! WRITE (IOOUT,99012) ! empty line
       Fmt(4) = ' '
       Fmt(5) = '13'
       Fmt(7) = '5,'
@@ -4460,9 +4556,9 @@ C SPECIFIC IMPULSE
       ENDIF
       IF ( .NOT.Eql ) THEN
         IF ( Massf ) THEN
-          WRITE (IOOUT,99014) 'MASS' ! header
+          ! WRITE (IOOUT,99014) 'MASS' ! header
         ELSE
-          WRITE (IOOUT,99014) 'MOLE' ! header
+          ! WRITE (IOOUT,99014) 'MOLE' ! header
           ww = 1.D0/Totn(Nfz)
         ENDIF
 C MOLE (OR MASS) FRACTIONS - FROZEN
@@ -4478,7 +4574,7 @@ C MOLE (OR MASS) FRACTIONS - FROZEN
           ENDIF
           IF ( line.EQ.3.OR.k.EQ.Ngc ) THEN
             IF ( line.EQ.0 ) GOTO 200
-            WRITE (IOOUT,99015) (z(ln),X(ln),ln=1,line) ! variables
+            ! WRITE (IOOUT,99015) (z(ln),X(ln),ln=1,line) ! variables
             line = 0
           ENDIF
         ENDDO
@@ -4504,6 +4600,10 @@ C MOLE (OR MASS) FRACTIONS - FROZEN
 99013 FORMAT (/' PERFORMANCE PARAMETERS'/)
 99014 FORMAT (1x,A4,' FRACTIONS'/)
 99015 FORMAT (1X,3(A15,F8.5,3X))
+99016 FORMAT ('CREATION OF ',A15,' FIELD FAILED')
+99017 FORMAT (A4,I1)
+99018 FORMAT (A4,I1)
+99019 FORMAT (I2)
       END
       SUBROUTINE ROCKET
 C***********************************************************************
@@ -6825,4 +6925,50 @@ C
         IF ( vi.GE.1000000. ) Fmt(k) = '0,'
       ENDDO
       Fmt(29)(2:) = ' '
+      END
+      SUBROUTINE ADDTOSTRUCT(colTitles,field,N,values,unit,hasUnit)
+C***********************************************************************
+C adds a new field to output struct with specified field name and values
+C***********************************************************************
+      USE mexVars
+      IMPLICIT NONE
+      INCLUDE 'cea.inc'
+
+      !Mex function declarations
+      mwPointer mxCreateStructArray
+      INTEGER*4 mxAddField
+      mwPointer mxCreateDoubleMatrix
+      mwPointer mxGetPr
+      mwPointer mxCreateString
+
+      ! Subroutine declaration
+      INTEGER i,N
+      INTEGER*4 newField,unitField
+      CHARACTER*15 field
+      CHARACTER*15 colTitles(13)
+      CHARACTER*15 unit
+      REAL*8 values(N)
+      LOGICAL hasUnit
+      mwPointer tempStruct,tempArr,valPtr,unitPtr
+C
+      tempStruct = mxCreateStructArray(1,[1],N,colTitles)
+      DO i = 1,N
+        tempArr = mxCreateDoubleMatrix(1,1,0)
+        valPtr = mxGetPr(tempArr)
+        CALL mxCopyReal8ToPtr(values(i),valPtr,1)
+        CALL mxSetPr(tempArr,valPtr)
+        CALL mxSetFieldByNumber(tempStruct,1,i,tempArr)
+      ENDDO
+      IF(hasUnit) THEN
+        unitField = mxAddField(tempStruct,'UNIT')
+        unitPtr = mxCreateString(unit)
+        CALL mxSetFieldByNumber(tempStruct,1,unitField,unitPtr)
+      ENDIF
+      newField = mxAddField(outputData,field)
+      IF(newField.EQ.-1) THEN
+        WRITE(errMsg,99001) field
+        CALL mexErrMsgIdAndTxt('CEA:RKTOUT:OUTPUT',errMsg)
+      ENDIF
+      CALL mxSetFieldByNumber(outputData,1,newField,tempStruct)
+99001 FORMAT ('CREATION OF ',A15,' FIELD FAILED')
       END
