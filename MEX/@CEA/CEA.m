@@ -1,38 +1,40 @@
 classdef CEA < handle
 
     properties (SetAccess = public)
-        data;
-        ioinp = 'No inputs created';
-        input;
-        % variables for Input creation
-        OF;
-        pressure;
-        presUnit = 'psia';
-        supar;
-        PcPe;
-        Debug = false;
+        data; % Struct output of the mex function
+        ioinp = 'No inputs created'; % Input cell array of strings
+        input; % Input_Class object to generate ioinp
+
+        %%% variables for Input creation
+        OF; % Oxidizer to fuel ratio
+        pressure; % Input pressure
+        presUnit = 'psia'; % Pressure unit
+        supar; % Super sonic area ratio
+        PcPe; % Pc/Pe
+        Debug = false; % to have class debug outputs
 
     end
     
     properties (Access = ?input_class)
-        fuel;
-        fuelWt;
-        fuelTemp;
+        fuel; % Fuel names cell vector of strings
+        fuelWt; % Fuel weight ratio vector [%%]
+        fuelTemp; % Fuel tempuratures vector
 
-        oxid;
-        oxidWt;
-        oxidTemp;
+        oxid; % Oxidizer names cell vector of strings
+        oxidWt; % Oxidizer weight ratio vector [%%]
+        oxidTemp; % Oxidizer tempuratures vector
     end
     methods
         % Constructeur
         function this = CEA()
+            % calls input_class constructor for the input property
             this.input = input_class(this);
         end
         
         % Autres fonctions
-        data = run(obj)
-        setFuel(obj, fuels, fuelWeights, fuelTemps)
-        setOxid(obj, oxids, oxidWeights, oxidTemps)
+        data = run(obj) % runs the compiled mex function
+        setFuel(obj, fuels, fuelWeights, fuelTemps) % Function to set fuel property's
+        setOxid(obj, oxids, oxidWeights, oxidTemps) % Function to set oxidizer property's
     end
     
 end
