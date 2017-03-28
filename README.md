@@ -1,11 +1,21 @@
-<h1>Chemical Equilibrium with Applications for MATLAB</h1>
+# Chemical Equilibrium with Applications for MATLAB
 
-<p>This project aims to modify NASA's <a href="https://www.grc.nasa.gov/WWW/CEAWeb/">Chemical Equilibrium with Applications</a> to be able to use it's functionalities with MATLAB in a much easier and powerful way.</p>
+This project aims to modify NASA's [Chemical Equilibrium with Applications](https://www.grc.nasa.gov/WWW/CEAWeb/) to be able to use it's functionalities with MATLAB in a much easier and powerful way.
 
-<p>In the <emph>NasaSource</emph> folder there is all the original files downloaded straight from NASA's CEA website. However the FORTRAN source codes are commented for better comprehension of the way CEA works.</p>
+## MEX
+The **_MEX_** folder holds the modified cea2.f file with it's compiled mex64 file and the CEA class to set the input parameters and run the program properly. This folder also holds an example file called *initialize.m*.
 
-<p>The <emph>CEA_Wrapper</emph> folder holds a quickly made matlab wrapper of CEA which consists of a function that writes the input file, calls the compiled CEA program, and translates the output file into a struct matrix which is returned to the user.</p>
+### <span style="color:red;"> IMPORTANT </span>
+*The mex version on CEA only supports the **rocket** application at this time.*
 
-<p>The <emph>MEX</emph> folder holds the modified cea2.f file and a subfolder which will hold the mex64 files and their dependencies once done.</p>
+## DEV
+The **_DEV_** folder holds doccumentation for the developement of the API and the tracking of changes of the MEX files.
 
-<p>Created as a project in collaboration with École Polytechnique de Montréal</p>
+## OLD
+The **_OLD_** folder holds the following files which will be deleted in the comming weeks
+
+>In the **_OLD/NasaSource_** folder there is all the original files downloaded straight from NASA's CEA website. It was supposed to be better commented, however I never got around to doing it.
+
+>The **_OLD/CEA_Wrapper_** folder holds a quickly made matlab wrapper of CEA which consists of a function that writes the input file, calls the compiled CEA program, and translates the output file into a struct matrix which is returned to the user. Will be deleted since the MEX method is faster and much more accurate for the output data.
+
+Created as a project in collaboration with École Polytechnique de Montréal
