@@ -1,4 +1,5 @@
 function data = run(obj)
+    % runs the compiled mex function
     if obj.Debug
         c2 = clock;
     end

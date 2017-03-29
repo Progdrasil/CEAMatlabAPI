@@ -1,4 +1,5 @@
 function setOxid(obj, oxids, oxidWeights, oxidTemps)
+    % Function to set oxidizer property's
     if (iscellstr(oxids))
         if (length(oxidWeights) == length(oxidTemps) && length(oxidTemps) == length(oxids))
             obj.oxid = oxids;

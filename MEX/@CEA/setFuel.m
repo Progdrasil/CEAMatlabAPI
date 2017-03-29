@@ -1,4 +1,5 @@
 function setFuel(obj, fuels, fuelWeights, fuelTemps)
+    % Function to set fuel property's
     if (iscellstr(fuels))
         if (length(fuelWeights) == length(fuelTemps) && length(fuelTemps) == length(fuels))
             obj.fuel = fuels;

@@ -1,13 +1,14 @@
 classdef input_class < handle
     
     properties (SetAccess = private)
-        parent;
+        parent; % Link to the CEA class
     end
     
     methods (Access = ?CEA)
         % Constructeur
         function this = input_class(parent)
-            this.parent = parent;
+            % Creates link to parent CEA class object
+            this.parent = parent; 
         end
     end
     methods
