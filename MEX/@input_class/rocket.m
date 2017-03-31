@@ -1,8 +1,15 @@
-function inp = rocket(obj)%, OF, pressure, presUnit, supar, PcPe, fuel, fuelWt, fuelTemp, oxid, oxidWt, oxidTemp)
-    % Generates Input cell array for mex function
-    % examples
-    % inp = test.rocket( 3 , 350, 'psia', 4.84 , 23.8 , 'paraffin' , 100, 298.15 , 'N2O', 100, 298.15)
-    % inp = test.rocket( 3 , 350 ,'psia', 4.84 , 23.8 , {'paraffin' 'CH4' 'RP-1'} , [50 25 25], [298.15 298.15 298.15], {'N2O' 'O2(L)'}, [75 25],[298.15 90.1])
+function inp = rocket(obj)
+    % input_class.rocket Generates rocket application Input cell array for mex function
+    %   Accesses parent CEA object's parameters and creates the mex function's
+    %   input for the rocket application of cea.
+    % 
+    % input_class.rocket Examples
+    %   CEAobj = CEA;
+    %   inp = CEAobj.rocket();
+    %
+    % See also:
+    % input_class, CEA
+    
     if obj.parent.Debug
         c1 = clock;
     end

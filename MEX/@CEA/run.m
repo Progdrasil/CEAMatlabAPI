@@ -1,5 +1,16 @@
 function data = run(obj)
-    % runs the compiled mex function
+    % CEA.run Runs the compiled mex function
+    %   Must have ioinp already generated to run as well as having the
+    %   files thermo.lib and trans.lib in the current matlab path. Returns
+    %   a struct with all the data in the usual way the output files were
+    %   generated on the cearun website.
+    %
+    % CEA.run Examples
+    %   CEAobj = CEA;
+    %   data = CEAobj.run();
+    %
+    % See also:
+    % CEA, input_class
     if obj.Debug
         c2 = clock;
     end
