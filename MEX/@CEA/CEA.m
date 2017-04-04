@@ -1,4 +1,30 @@
 classdef CEA < handle
+    % CEA Summary
+    % Class to store inputs and outputs of NASA's CEA program and run it
+    %
+    % CEA Properties:
+    %   OF - Oxidizer to fuel ratio
+    %   pressure - Input chamber pressure
+    %   presUnit - Pressure Unit psia by default
+    %   supar - Supersonic area ratio
+    %   PcPe - Pc/Pe
+    %   input - input_class object to genereate ioinp
+    %   ioinp - Input cell array of strings passed to the cea mex function 
+    %   data - Struct output of the cea mex function
+    %
+    % CEA Private properties:
+    % Set by using the setFuel and setOxid methods
+    %   fuel - Fuel names stored in a cell vector of strings
+    %   fuelWt - Mass weight fraction of the fuels in a vector
+    %   fuelTemp - Temperature of fuels in a vector
+    %   oxid - Oxidizer names stored in a cell vector of strings
+    %   oxidWt - Mass weight fraction of the oxidizers in a vector
+    %   oxidTemp - Temperature of oxidizers in a vector
+    %
+    % CEA Methods:
+    %   setFuel - Set the parameters fuel, fuelWt and fuelTemp correctly
+    %   setOxid - Set the parameters oxid, oxidWt and oxidTemp correctly
+    %   run - Run's the cea mex function with the current ioinp parameter
 
     properties (SetAccess = public)
         data; % Struct output of the mex function
@@ -12,7 +38,7 @@ classdef CEA < handle
         OF; % Oxidizer to fuel ratio
         pressure; % Input pressure
         presUnit = 'psia'; % Pressure unit
-        supar; % Super sonic area ratio
+        supar; % Supersonic area ratio
         PcPe; % Pc/Pe
         Debug = false; % to have class debug outputs
 
