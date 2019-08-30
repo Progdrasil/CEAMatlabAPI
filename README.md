@@ -1,5 +1,7 @@
 # Chemical Equilibrium with Applications for MATLAB
 
+**NOTE**: Seeing as this was a project from when I was a student, I do not have much time to work on this in my free time. I am seeing some interest from a few people, therefore I do have plans to come back to this and refactor it to python instead of matlab (Again since i am no loger a student and MatLab is expensive). It will still be supported in matlab using [this feature](https://www.mathworks.com/help/matlab/call-python-libraries.html). Pull requests are welcome if you wish to add more support (chemical output for example).
+
 This project aims to modify NASA's [Chemical Equilibrium with Applications](https://www.grc.nasa.gov/WWW/CEAWeb/) to be able to use it's functionalities with MATLAB in a much easier and powerful way.
 
 ## MEX
